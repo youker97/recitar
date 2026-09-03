@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
 import { db, nuevoId } from '../datos/db'
 import { guardarItems } from '../datos/repos'
-import { useCursoActivo, useCursos, useFuentes, useItems } from '../datos/hooks'
-import { guardarAjustes } from '../datos/db'
+import { useCursoActivo, useFuentes, useItems } from '../datos/hooks'
 import type { Fuente, SeccionApunte } from '../datos/tipos'
 import { mapaDe } from './Pasada'
 import { detectarSecciones, presentar, textoDeSeccion } from '../logica/mapa'
@@ -17,7 +16,6 @@ import { ir } from '../rutas'
  * de un tema. Un apunte de 300 hojas se trabaja así: de a un tema.
  */
 export function Mapa() {
-  const cursos = useCursos()
   const curso = useCursoActivo()
   const fuentes = useFuentes(curso?.id)
   const items = useItems(curso?.id)
@@ -85,15 +83,6 @@ export function Mapa() {
         <h1>Mapa de la materia</h1>
         <span className="lado numeral">{fuentes.length} apuntes</span>
       </div>
-
-      {cursos.length > 1 && (
-        <label className="campo">
-          <span>Curso</span>
-          <select value={curso.id} onChange={(e) => guardarAjustes({ cursoActivoId: e.target.value })}>
-            {cursos.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
-        </label>
-      )}
 
       <p className="apunte">
         Cada apunte trae sus temas. Marca hasta dónde llegó el curso: lo que viene después existe en

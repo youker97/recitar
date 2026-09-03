@@ -68,6 +68,19 @@ export function Importar() {
   const [validado, setValidado] = useState<ResultadoValidacion | null>(null)
   const [restos, setRestos] = useState<string[]>([])
   const [nombreCurso, setNombreCurso] = useState('')
+  // 'nuevo' significa que este material abre un curso propio.
+  const [destino, setDestino] = useState<string>('')
+
+  // El curso de ejemplo es una demo, no la materia de nadie. Si es lo único
+  // que hay, el material que traes abre un curso tuyo en vez de meterse
+  // adentro del ejemplo, que era la forma de terminar estudiando Penal con
+  // los bloques de Civil.
+  const soloEjemplo = items.length > 0 && items.every((i) => i.origen === 'ejemplo')
+  const elegido = destino || (soloEjemplo || !curso ? 'nuevo' : curso.id)
+  const faltaNombre = elegido === 'nuevo' && nombreCurso.trim().length === 0
+  const nombreDestino = elegido === 'nuevo'
+    ? nombreCurso.trim()
+    : cursos.find((c) => c.id === elegido)?.nombre ?? ''
 
   const elegidoParaClaude = archivos.find((a) => a.id === archivoClaude) ?? archivos.find((a) => a.clase !== 'paquete')
   const trozos = useMemo(
@@ -160,8 +173,8 @@ export function Importar() {
   }
 
   async function asegurarCurso(): Promise<string> {
-    if (curso) return curso.id
-    const creado = await crearCurso(nombreCurso.trim() || 'Mi curso')
+    if (elegido !== 'nuevo') return elegido
+    const creado = await crearCurso(nombreCurso.trim() || 'Curso sin nombre')
     await guardarAjustes({ cursoActivoId: creado.id })
     return creado.id
   }
@@ -316,13 +329,41 @@ export function Importar() {
       {error && <div className="aviso-error">{error}</div>}
       {cargando && <p className="apunte">{cargando}</p>}
 
-      {cursos.length > 1 && paso !== 'revisar' && (
-        <label className="campo">
-          <span>Curso al que va este material</span>
-          <select value={curso?.id ?? ''} onChange={(e) => guardarAjustes({ cursoActivoId: e.target.value })}>
-            {cursos.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
-        </label>
+      {paso !== 'revisar' && (
+        <div className="hoja hoja-aviso">
+          <label className="campo" style={{ marginBottom: elegido === 'nuevo' ? '0.6rem' : 0 }}>
+            <span>Este material va a</span>
+            <select
+              value={elegido}
+              onChange={(e) => {
+                setDestino(e.target.value)
+                if (e.target.value !== 'nuevo') guardarAjustes({ cursoActivoId: e.target.value })
+              }}
+            >
+              {cursos.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+              <option value="nuevo">＋ Un curso nuevo</option>
+            </select>
+          </label>
+          {elegido === 'nuevo' && (
+            <label className="campo" style={{ marginBottom: 0 }}>
+              <span>Cómo se llama el curso</span>
+              <input
+                type="text"
+                value={nombreCurso}
+                placeholder="Derecho Penal II"
+                onChange={(e) => setNombreCurso(e.target.value)}
+              />
+              {soloEjemplo && (
+                <span className="apunte">
+                  Lo único que hay cargado es el curso de ejemplo, que es una demo. Tu material
+                  abre un curso aparte para que no se mezclen.
+                </span>
+              )}
+            </label>
+          )}
+        </div>
       )}
 
       {paso !== 'revisar' && (
@@ -461,16 +502,18 @@ export function Importar() {
             {bloquesUsados.map((b) => <option key={b} value={b} />)}
           </datalist>
 
-          {cursos.length === 0 && (
-            <label className="campo">
-              <span>Nombre del curso nuevo</span>
-              <input type="text" value={nombreCurso} placeholder="Derecho Penal I" onChange={(e) => setNombreCurso(e.target.value)} />
-            </label>
-          )}
-
           <div className="pie-fijo">
-            <button type="button" className="boton boton-fuerte boton-ancho" onClick={guardarTodo}>
-              Guardar {archivos.filter((a) => a.incluir).length} archivos como material
+            <button
+              type="button"
+              className="boton boton-fuerte boton-ancho"
+              disabled={faltaNombre}
+              onClick={guardarTodo}
+            >
+              {faltaNombre
+                ? 'Ponle nombre al curso'
+                : `Guardar ${archivos.filter((a) => a.incluir).length} ${
+                    archivos.filter((a) => a.incluir).length === 1 ? 'archivo' : 'archivos'
+                  } en “${nombreDestino}”`}
             </button>
           </div>
 
