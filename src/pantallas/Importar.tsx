@@ -175,7 +175,15 @@ export function Importar() {
 
     let apuntes = 0
     let guardados = 0
+    let repetidos = 0
     const problemas: string[] = []
+
+    // Huella de lo que ya está guardado, para no duplicar el mismo apunte.
+    const yaEstan = new Set(
+      (await db.fuentes.where('cursoId').equals(cursoId).toArray()).map(
+        (f) => `${f.titulo}|${f.texto.length}`,
+      ),
+    )
 
     for (const archivo of incluidos) {
       if (archivo.clase === 'paquete') {
@@ -194,6 +202,13 @@ export function Importar() {
         problemas.push(`${archivo.nombre}: quedó muy corto (${texto.length} caracteres)`)
         continue
       }
+      const huella = `${archivo.nombre}|${texto.length}`
+      if (yaEstan.has(huella)) {
+        repetidos++
+        continue
+      }
+      yaEstan.add(huella)
+
       const secciones = detectarSecciones(texto)
       await db.fuentes.put({
         id: nuevoId('f'),
@@ -213,11 +228,18 @@ export function Importar() {
     const partes: string[] = []
     if (apuntes > 0) partes.push(`${apuntes} ${apuntes === 1 ? 'apunte guardado' : 'apuntes guardados'}`)
     if (guardados > 0) partes.push(`${guardados} ítems`)
+    if (repetidos > 0) {
+      partes.push(`${repetidos} ${repetidos === 1 ? 'estaba repetido y no se volvió a guardar' : 'estaban repetidos y no se volvieron a guardar'}`)
+    }
     if (problemas.length > 0) setError(problemas.join(' · '))
     setAviso(partes.join(' y ') || null)
 
-    if (apuntes > 0 || guardados > 0) {
-      setArchivos((prev) => prev.filter((a) => !a.incluir))
+    if (apuntes === 0 && guardados === 0 && repetidos === 0) return
+
+    setArchivos((prev) => prev.filter((a) => !a.incluir))
+    // Si hubo algo que contar (repetidos o problemas), el aviso se queda a la
+    // vista en vez de perderse al cambiar de pantalla.
+    if (repetidos === 0 && problemas.length === 0) {
       ir(apuntes > 0 ? '/mapa' : '/material')
     }
   }
@@ -283,7 +305,14 @@ export function Importar() {
         )}
       </div>
 
-      {aviso && <div className="hoja hoja-bien">{aviso}</div>}
+      {aviso && (
+        <div className="hoja hoja-bien">
+          {aviso}
+          <p style={{ margin: '0.5rem 0 0' }}>
+            <a className="boton boton-chico" href="#/mapa">Ver el mapa</a>
+          </p>
+        </div>
+      )}
       {error && <div className="aviso-error">{error}</div>}
       {cargando && <p className="apunte">{cargando}</p>}
 

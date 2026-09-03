@@ -71,6 +71,42 @@ describe('mapa del apunte', () => {
     expect(partes[partes.length - 1].fin).toBe(corrido.length)
   })
 
+  it('un apunte lleno de numeración no se parte en noventa temas', () => {
+    // Así sale un apunte de Derecho de un PDF: cada línea visual es un renglón
+    // y la numeración interna aparece por todas partes.
+    const parrafo = (n: number) =>
+      `El legislador describe los elementos que deben concurrir para configurar\n` +
+      `la conducta tipica numero ${n}, de manera que el interprete pueda realizar\n` +
+      `una atribucion objetiva y una subjetiva que constate su concurrencia.\n`
+    let texto = 'LA TIPICIDAD\n' + parrafo(0)
+    for (let capitulo = 1; capitulo <= 6; capitulo++) {
+      texto += `${capitulo}.- Elemento numero ${capitulo}\n` + parrafo(capitulo)
+      for (let sub = 1; sub <= 4; sub++) {
+        texto += `${capitulo}.${sub}.- Sub elemento ${sub}\n` + parrafo(sub)
+        for (const letra of ['a', 'b', 'c']) {
+          texto += `${letra}) Detalle ${letra}\n` + parrafo(1)
+        }
+      }
+    }
+
+    const partes = detectarSecciones(texto)
+    expect(partes.length).toBeGreaterThanOrEqual(3)
+    expect(partes.length).toBeLessThanOrEqual(20)
+    // Se queda con los títulos de arriba, no con las letras sueltas.
+    expect(partes.some((s) => s.titulo.startsWith('a)'))).toBe(false)
+    expect(partes.map((s) => s.titulo).join(' ')).toContain('Elemento numero 1')
+  })
+
+  it('nunca pasa de cuarenta temas, por largo que sea el apunte', () => {
+    let texto = ''
+    for (let i = 1; i <= 300; i++) {
+      texto += `CAPITULO ${i}\n` + 'Texto de relleno para este capitulo del apunte. '.repeat(20) + '\n\n'
+    }
+    const partes = detectarSecciones(texto)
+    expect(partes.length).toBeLessThanOrEqual(40)
+    expect(partes[partes.length - 1].fin).toBe(texto.length)
+  })
+
   it('un apunte corto es una sola sección', () => {
     const partes = detectarSecciones('Texto muy corto, sin títulos ni nada.')
     expect(partes).toHaveLength(1)

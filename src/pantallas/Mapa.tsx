@@ -5,7 +5,7 @@ import { useCursoActivo, useCursos, useFuentes, useItems } from '../datos/hooks'
 import { guardarAjustes } from '../datos/db'
 import type { Fuente, SeccionApunte } from '../datos/tipos'
 import { mapaDe } from './Pasada'
-import { textoDeSeccion } from '../logica/mapa'
+import { detectarSecciones, textoDeSeccion } from '../logica/mapa'
 import { normalizar } from '../logica/comparar'
 import { aItems, validarPaquete } from '../datos/esquema'
 import { armarPedido, copiar, limpiarRespuesta, partirTexto } from '../importar/claude'
@@ -36,6 +36,28 @@ export function Mapa() {
 
   async function marcarHasta(fuente: Fuente, indice: number) {
     await db.fuentes.put({ ...fuente, secciones: mapaDe(fuente), hasta: indice })
+  }
+
+  async function rehacerTemas(fuente: Fuente) {
+    const secciones = detectarSecciones(fuente.texto)
+    await db.fuentes.put({
+      ...fuente,
+      secciones,
+      hasta: secciones.length - 1,
+      avance: 0,
+      terminada: false,
+    })
+  }
+
+  async function borrarApunte(fuente: Fuente) {
+    const cuantos = items.filter(
+      (i) => i.seccion && (fuente.secciones ?? []).some((s) => normalizar(s.titulo) === normalizar(i.seccion!)),
+    ).length
+    const aviso = cuantos > 0
+      ? `¿Borrar “${fuente.titulo}”? Las ${cuantos} preguntas que salieron de él NO se borran: quedan en Material.`
+      : `¿Borrar “${fuente.titulo}”?`
+    if (!window.confirm(aviso)) return
+    await db.fuentes.delete(fuente.id)
   }
 
   async function alternarCubierta(fuente: Fuente, indice: number) {
@@ -97,8 +119,17 @@ export function Mapa() {
               </div>
               <p className="apunte">
                 {fuente.bloque} · {secciones.length} temas ·{' '}
-                {secciones.filter((s) => s.cubierta).length} con la pasada hecha
+                {secciones.filter((s) => s.cubierta).length} con la pasada hecha ·{' '}
+                {Math.round(fuente.texto.length / 1000)} mil caracteres
               </p>
+              <div className="botonera" style={{ marginBottom: '0.5rem' }}>
+                <button type="button" className="boton boton-chico" onClick={() => rehacerTemas(fuente)}>
+                  Rehacer los temas
+                </button>
+                <button type="button" className="boton boton-chico boton-peligro" onClick={() => borrarApunte(fuente)}>
+                  Borrar este apunte
+                </button>
+              </div>
 
               {desplegado && (
                 <ul className="lista-limpia">
