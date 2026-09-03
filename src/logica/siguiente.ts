@@ -103,7 +103,7 @@ export function proximaJugada(entrada: EntradaJugada): Jugada {
       return {
         clave: `pasada-${f.id}-${pendiente}`,
         titulo: `Te toca: ${s.titulo}`,
-        texto: `De "${f.titulo}". Unos ${minutos} minutos: primero intentas sin saber, después lees, después lo escribes de memoria.`,
+        texto: `De "${f.titulo}". Unos ${minutos} minutos: lo lees una vez con calma y después lo escribes sin mirar.`,
         etiqueta: 'Empezar la primera pasada',
         ruta: `#/pasada?fuente=${f.id}`,
       }

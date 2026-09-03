@@ -81,6 +81,23 @@ export function Ajustes() {
         <label className="marca-check" style={{ padding: '0.5rem 0' }}>
           <input
             type="checkbox"
+            checked={ajustes.intentarAntes}
+            onChange={(e) => guardarAjustes({ intentarAntes: e.target.checked })}
+          />
+          <span>
+            <strong>Intentar las preguntas antes de leer</strong>
+            <br />
+            <span className="apunte">
+              Fallar una pregunta y recién ahí leer hace que el texto se agarre mejor. Solo aparece
+              en los temas que ya tienen preguntas: nunca te va a pedir que adivines de qué va un
+              texto que no has visto.
+            </span>
+          </span>
+        </label>
+
+        <label className="marca-check" style={{ padding: '0.5rem 0' }}>
+          <input
+            type="checkbox"
             checked={ajustes.pasadaProfunda}
             onChange={(e) => guardarAjustes({ pasadaProfunda: e.target.checked })}
           />

@@ -304,6 +304,12 @@ export interface Ajustes {
   repreguntasHabladas: boolean
   /** La primera pasada va por trozos chicos en vez de por tema completo. */
   pasadaProfunda: boolean
+  /**
+   * Antes de leer un tema, intentar las preguntas que ya tenga.
+   * Apagado por defecto: adivinar de qué va un texto que nunca viste no es
+   * un pretest, es relleno, y aburre antes de empezar.
+   */
+  intentarAntes: boolean
 }
 
 export const AJUSTES_POR_DEFECTO: Ajustes = {
@@ -318,4 +324,5 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   mostrarConsejos: true,
   repreguntasHabladas: true,
   pasadaProfunda: false,
+  intentarAntes: false,
 }

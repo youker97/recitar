@@ -64,9 +64,17 @@ recién ahí leer el texto. Suena absurdo y funciona: en cinco experimentos con
 Al intentarlo, tu cabeza activa lo que sí sabe y decide qué es importante en el
 texto que viene.
 
-**En la app:** el modo **Primera pasada**. Por cada trozo del apunte: primero
-predices o contestas sin saber, después lees, después cierras el texto y
-escribes lo que quedó.
+Pero el efecto es de **intentar preguntas concretas y fallarlas**, no de
+inventar un resumen a ciegas. Escribir "de qué crees que va este trozo" sobre un
+texto que nunca viste no es un pretest: no hay nada que recuperar, no hay
+respuesta contra la cual fallar, y lo único que produce es fricción antes de
+empezar. Eso estuvo un tiempo en la app como paso obligatorio y salió: una
+técnica que hace que no abras la app vale cero.
+
+**En la app:** el modo **Primera pasada** es leer un tema, cerrar el texto y
+escribir lo que quedó (eso es el punto 1, que sí se sostiene solo). El pretest
+aparece únicamente cuando hay preguntas de verdad para ese tema, es opcional
+—se enciende en Ajustes— y siempre se puede saltar sin escribir nada.
 
 ## 5. La hoja en blanco
 

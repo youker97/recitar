@@ -30,8 +30,13 @@ interface Paso {
 
 /**
  * Primera pasada: lo único de la app donde se lee, y no se lee de corrido.
- * Por cada trozo: intentar sin saber, leer, cerrar y escribir lo que quedó.
- * Se avanza tema por tema, no cada tantas letras.
+ * Por cada tema: leer, cerrar el texto y escribir lo que quedó.
+ *
+ * Antes había un paso previo obligatorio de "escribe de qué crees que va esto".
+ * Adivinar sobre un texto que nunca viste no es un pretest, es relleno: la
+ * evidencia del pretesting es de intentar PREGUNTAS y fallarlas, no de
+ * inventar un resumen a ciegas. Ahora solo aparece si el tema ya tiene
+ * preguntas de verdad, y únicamente si lo enciendes en Ajustes.
  */
 export function Pasada() {
   const { params } = useUbicacion()
@@ -41,7 +46,7 @@ export function Pasada() {
   const items = useItems(curso?.id)
   const [fuenteId, setFuenteId] = useState<string | null>(params.get('fuente'))
   const [paso, setPaso] = useState(0)
-  const [etapa, setEtapa] = useState<Etapa>('predecir')
+  const [etapa, setEtapa] = useState<Etapa>('leer')
   const [prediccion, setPrediccion] = useState('')
   const [recuerdo, setRecuerdo] = useState('')
 
@@ -94,11 +99,16 @@ export function Pasada() {
     if (!fuente || pasos.length === 0) return
     const primero = pasos.findIndex((p) => !p.seccion.cubierta)
     setPaso(primero === -1 ? 0 : primero)
-    setEtapa('predecir')
+    setEtapa(ajustes.intentarAntes ? 'predecir' : 'leer')
     setPrediccion('')
     setRecuerdo('')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fuenteId, pasos.length])
+
+  // Si el tema no tiene preguntas todavía, no hay nada que intentar: al texto.
+  useEffect(() => {
+    if (etapa === 'predecir' && preguntas.length === 0) setEtapa('leer')
+  }, [etapa, preguntas.length])
 
   async function marcarCubierta(indiceSeccion: number) {
     if (!fuente) return
@@ -120,7 +130,7 @@ export function Pasada() {
     if (actual.ultimoDeLaSeccion) await marcarCubierta(actual.indiceSeccion)
     setPrediccion('')
     setRecuerdo('')
-    setEtapa('predecir')
+    setEtapa(ajustes.intentarAntes ? 'predecir' : 'leer')
     if (paso + 1 >= pasos.length) {
       ir('/')
       return
@@ -137,9 +147,8 @@ export function Pasada() {
       <div>
         <div className="titulo-seccion"><h1>Primera pasada</h1></div>
         <p className="apunte">
-          Para lo que todavía no entiendes. No es leer: por cada trozo primero intentas responder sin
-          saber, después lees, y después cierras el texto y escribes lo que quedó. Equivocarse antes
-          de leer hace que el texto se agarre mucho mejor.
+          Para lo que todavía no entiendes. No es leer de corrido: lees un tema, cierras el texto y
+          escribes lo que quedó. Escribirlo sin mirar es lo que lo fija; releer no.
         </p>
         {fuentes.length === 0 ? (
           <div className="vacio">
@@ -197,26 +206,16 @@ export function Pasada() {
         <span className="lado numeral">{paso + 1} de {pasos.length}</span>
       </div>
 
-      {etapa === 'predecir' && (
+      {etapa === 'predecir' && preguntas.length > 0 && (
         <>
           <h3>Antes de leer</h3>
           <p className="apunte">
-            Este tema tiene {palabras.toLocaleString('es-CL')} palabras: unos {minutosLectura} min de
-            lectura y otro tanto de escritura.
+            Este tema ya tiene preguntas. Contéstalas con lo que tengas: da lo mismo equivocarse,
+            fallar ahora es lo que hace que el texto después se agarre.
           </p>
-          {preguntas.length > 0 ? (
-            <>
-              <p className="apunte">
-                Contesta con lo que tengas. Da lo mismo si te equivocas: equivocarse ahora es lo que
-                hace que después se te quede.
-              </p>
-              {preguntas.map((p) => (
-                <p key={p.id} className="estudio">{resumenDeItem(p)}</p>
-              ))}
-            </>
-          ) : (
-            <p className="apunte">En una línea: ¿de qué crees que va este trozo?</p>
-          )}
+          {preguntas.map((p) => (
+            <p key={p.id} className="estudio">{resumenDeItem(p)}</p>
+          ))}
           <textarea
             className="serif"
             rows={4}
@@ -228,10 +227,9 @@ export function Pasada() {
             <button
               type="button"
               className="boton boton-fuerte boton-ancho"
-              disabled={contarPalabras(prediccion) < 3}
               onClick={() => setEtapa('leer')}
             >
-              Ahora sí, mostrarme el texto
+              {contarPalabras(prediccion) < 3 ? 'No tengo idea, al texto' : 'Listo, mostrarme el texto'}
             </button>
           </div>
         </>
