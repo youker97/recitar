@@ -441,3 +441,37 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 }
 .jugada-freno { border-top-color: var(--rojo); background: var(--rojo-suave); }
 .jugada-freno .jugada-rotulo { color: var(--rojo); }
+
+/* ---------- selector de páginas ---------- */
+
+.rango { display: flex; align-items: flex-end; gap: 0.5rem; flex-wrap: wrap; }
+.rango label { display: grid; gap: 0.15rem; }
+.rango input { width: 5.5rem; min-height: 2.4rem; padding: 0.3rem 0.4rem; }
+
+.paginas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  max-height: 15rem;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--linea);
+  background: var(--papel-alto);
+  margin: 0.6rem 0 0.4rem;
+}
+
+.pagina-chip {
+  min-width: 2.3rem;
+  height: 1.9rem;
+  padding: 0 0.25rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--linea-fuerte);
+  background: var(--papel);
+  color: var(--tinta-tenue);
+  cursor: pointer;
+  border-radius: 2px;
+}
+.pagina-chip[aria-pressed='true'] { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+.pagina-vacia { opacity: 0.45; font-style: italic; }
+.pagina-hallada { box-shadow: inset 0 -3px 0 var(--rojo); }

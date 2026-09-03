@@ -1,112 +1,236 @@
 import { useMemo, useState } from 'react'
-import { crearCurso, guardarItems } from '../datos/repos'
 import { db, guardarAjustes, nuevoId } from '../datos/db'
+import { crearCurso, guardarItems } from '../datos/repos'
 import { useCursoActivo, useCursos, useItems } from '../datos/hooks'
 import { aItems, validarPaquete, type ResultadoValidacion } from '../datos/esquema'
 import { convertirApunte } from '../importar/texto'
 import type { PaginaPdf } from '../importar/pdf'
 import { armarPedido, copiar, limpiarRespuesta, partirTexto } from '../importar/claude'
 import { detectarSecciones } from '../logica/mapa'
+import { SelectorPaginas } from '../componentes/SelectorPaginas'
 import { NOMBRE_TIPO, type OrigenItem, type TipoItem } from '../datos/tipos'
 import { ir } from '../rutas'
 
-type Paso = 'elegir' | 'texto' | 'revisar'
+type Paso = 'elegir' | 'archivos' | 'revisar'
+
+interface Archivo {
+  id: string
+  nombre: string
+  clase: 'pdf' | 'texto' | 'paquete'
+  /** Solo PDF. */
+  paginas?: PaginaPdf[]
+  elegidas: Set<number>
+  /** Texto completo para los archivos de texto; crudo para los paquetes. */
+  texto: string
+  bloque: string
+  incluir: boolean
+  paquete?: ResultadoValidacion
+  origen: OrigenItem
+}
+
+function nombreABloque(nombre: string): string {
+  const limpio = nombre
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1)
+}
+
+function textoDe(archivo: Archivo): string {
+  if (archivo.clase !== 'pdf' || !archivo.paginas) return archivo.texto
+  return archivo.paginas
+    .filter((p) => archivo.elegidas.has(p.numero))
+    .map((p) => p.texto)
+    .join('\n\n')
+}
 
 export function Importar() {
   const cursos = useCursos()
   const curso = useCursoActivo()
   const items = useItems(curso?.id)
-  const bloques = useMemo(
+  const bloquesUsados = useMemo(
     () => [...new Set(items.map((i) => i.bloque).filter(Boolean))].sort(),
     [items],
   )
 
   const [paso, setPaso] = useState<Paso>('elegir')
-  const [texto, setTexto] = useState('')
-  const [paginas, setPaginas] = useState<PaginaPdf[] | null>(null)
-  const [elegidas, setElegidas] = useState<Set<number>>(new Set())
-  const [validado, setValidado] = useState<ResultadoValidacion | null>(null)
-  const [origen, setOrigen] = useState<OrigenItem>('json')
-  const [restos, setRestos] = useState<string[]>([])
-  const [pegado, setPegado] = useState('')
-  const [trozoActual, setTrozoActual] = useState(0)
-  const [oral, setOral] = useState(false)
+  const [archivos, setArchivos] = useState<Archivo[]>([])
+  const [cargando, setCargando] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [cargando, setCargando] = useState<string | null>(null)
+
+  // Puente con Claude
+  const [archivoClaude, setArchivoClaude] = useState<string>('')
+  const [trozoActual, setTrozoActual] = useState(0)
+  const [oral, setOral] = useState(false)
+  const [pegado, setPegado] = useState('')
+  const [validado, setValidado] = useState<ResultadoValidacion | null>(null)
+  const [restos, setRestos] = useState<string[]>([])
   const [nombreCurso, setNombreCurso] = useState('')
 
-  const trozos = useMemo(() => (texto ? partirTexto(texto) : []), [texto])
+  const elegidoParaClaude = archivos.find((a) => a.id === archivoClaude) ?? archivos.find((a) => a.clase !== 'paquete')
+  const trozos = useMemo(
+    () => (elegidoParaClaude ? partirTexto(textoDe(elegidoParaClaude)) : []),
+    [elegidoParaClaude],
+  )
 
-  function reiniciar() {
-    setPaso('elegir'); setTexto(''); setPaginas(null); setElegidas(new Set())
-    setValidado(null); setRestos([]); setPegado(''); setTrozoActual(0)
-    setAviso(null); setError(null); setNombreCurso('')
+  function actualizar(id: string, cambios: Partial<Archivo>) {
+    setArchivos((prev) => prev.map((a) => (a.id === id ? { ...a, ...cambios } : a)))
   }
 
-  async function alElegirArchivo(archivo: File) {
-    setError(null); setAviso(null); setValidado(null); setRestos([])
-    const nombre = archivo.name.toLowerCase()
-    try {
-      if (nombre.endsWith('.pdf')) {
-        setCargando('Leyendo el PDF…')
-        // pdf.js pesa: se carga solo cuando de verdad hay un PDF.
-        const { extraerTextoPdf } = await import('../importar/pdf')
-        const leidas = await extraerTextoPdf(archivo, (hecha, total) =>
-          setCargando(`Leyendo el PDF… página ${hecha} de ${total}`),
-        )
-        setPaginas(leidas)
-        setElegidas(new Set(leidas.map((p) => p.numero)))
-        setTexto(leidas.map((p) => p.texto).join('\n\n'))
-        setOrigen('pdf')
-        setPaso('texto')
-        setCargando(null)
-        return
+  async function alElegirArchivos(lista: File[]) {
+    setError(null)
+    setAviso(null)
+    const nuevos: Archivo[] = []
+    const total = lista.length
+
+    for (let i = 0; i < total; i++) {
+      const archivo = lista[i]
+      const nombre = archivo.name
+      const minuscula = nombre.toLowerCase()
+      try {
+        if (minuscula.endsWith('.pdf')) {
+          setCargando(`Leyendo ${nombre} (${i + 1} de ${total})…`)
+          const { extraerTextoPdf } = await import('../importar/pdf')
+          const paginas = await extraerTextoPdf(archivo, (hecha, cuantas) =>
+            setCargando(`Leyendo ${nombre} (${i + 1} de ${total}) — página ${hecha} de ${cuantas}`),
+          )
+          nuevos.push({
+            id: nuevoId('a'),
+            nombre,
+            clase: 'pdf',
+            paginas,
+            elegidas: new Set(paginas.filter((p) => p.texto.trim().length > 40).map((p) => p.numero)),
+            texto: '',
+            bloque: nombreABloque(nombre),
+            incluir: true,
+            origen: 'pdf',
+          })
+          continue
+        }
+
+        const contenido = await archivo.text()
+
+        if (minuscula.endsWith('.json')) {
+          let bruto: unknown
+          try {
+            bruto = JSON.parse(contenido)
+          } catch {
+            setError(`${nombre}: no es JSON válido. Puede que se haya cortado al copiarlo.`)
+            continue
+          }
+          if (typeof bruto === 'object' && bruto !== null && 'recitarRespaldo' in bruto) {
+            setError(`${nombre} es un respaldo completo. Restáuralo desde Ajustes › Respaldo.`)
+            continue
+          }
+          nuevos.push({
+            id: nuevoId('a'),
+            nombre,
+            clase: 'paquete',
+            elegidas: new Set(),
+            texto: contenido,
+            bloque: '',
+            incluir: true,
+            paquete: validarPaquete(bruto),
+            origen: 'json',
+          })
+          continue
+        }
+
+        nuevos.push({
+          id: nuevoId('a'),
+          nombre,
+          clase: 'texto',
+          elegidas: new Set(),
+          texto: contenido,
+          bloque: nombreABloque(nombre),
+          incluir: true,
+          origen: minuscula.endsWith('.md') ? 'md' : 'txt',
+        })
+      } catch (e) {
+        setError(`${nombre}: ${e instanceof Error ? e.message : 'no se pudo leer'}`)
+      }
+    }
+
+    setCargando(null)
+    if (nuevos.length === 0) return
+    setArchivos((prev) => [...prev, ...nuevos])
+    setPaso('archivos')
+  }
+
+  async function asegurarCurso(): Promise<string> {
+    if (curso) return curso.id
+    const creado = await crearCurso(nombreCurso.trim() || 'Mi curso')
+    await guardarAjustes({ cursoActivoId: creado.id })
+    return creado.id
+  }
+
+  /** Guarda los apuntes como material y los paquetes como ítems. */
+  async function guardarTodo() {
+    const incluidos = archivos.filter((a) => a.incluir)
+    if (incluidos.length === 0) { setError('No hay ningún archivo marcado.'); return }
+    setError(null)
+    const cursoId = await asegurarCurso()
+
+    let apuntes = 0
+    let guardados = 0
+    const problemas: string[] = []
+
+    for (const archivo of incluidos) {
+      if (archivo.clase === 'paquete') {
+        if (!archivo.paquete?.ok) {
+          problemas.push(`${archivo.nombre}: ${archivo.paquete?.errores[0]?.mensaje ?? 'paquete inválido'}`)
+          continue
+        }
+        const nuevos = aItems(archivo.paquete.items, cursoId, 'json')
+        await guardarItems(nuevos)
+        guardados += nuevos.length
+        continue
       }
 
-      const contenido = await archivo.text()
-
-      if (nombre.endsWith('.json')) {
-        let bruto: unknown
-        try {
-          bruto = JSON.parse(contenido)
-        } catch {
-          setError('El archivo no es JSON válido. Puede que se haya cortado al copiarlo.')
-          return
-        }
-        if (typeof bruto === 'object' && bruto !== null && 'recitarRespaldo' in bruto) {
-          setError('Esto es un respaldo completo, no un paquete de ítems. Restáuralo desde Ajustes › Respaldo.')
-          return
-        }
-        const resultado = validarPaquete(bruto)
-        setValidado(resultado)
-        setOrigen('json')
-        setNombreCurso(resultado.curso ?? '')
-        setPaso('revisar')
-        return
+      const texto = textoDe(archivo).trim()
+      if (texto.length < 300) {
+        problemas.push(`${archivo.nombre}: quedó muy corto (${texto.length} caracteres)`)
+        continue
       }
+      const secciones = detectarSecciones(texto)
+      await db.fuentes.put({
+        id: nuevoId('f'),
+        cursoId,
+        bloque: archivo.bloque.trim() || nombreABloque(archivo.nombre),
+        titulo: archivo.nombre,
+        texto,
+        creadoEn: Date.now(),
+        secciones,
+        hasta: secciones.length - 1,
+        avance: 0,
+        terminada: false,
+      })
+      apuntes++
+    }
 
-      setTexto(contenido)
-      setOrigen(nombre.endsWith('.md') ? 'md' : 'txt')
-      setPaso('texto')
-    } catch (e) {
-      setCargando(null)
-      setError(e instanceof Error ? e.message : 'No se pudo leer el archivo.')
+    const partes: string[] = []
+    if (apuntes > 0) partes.push(`${apuntes} ${apuntes === 1 ? 'apunte guardado' : 'apuntes guardados'}`)
+    if (guardados > 0) partes.push(`${guardados} ítems`)
+    if (problemas.length > 0) setError(problemas.join(' · '))
+    setAviso(partes.join(' y ') || null)
+
+    if (apuntes > 0 || guardados > 0) {
+      setArchivos((prev) => prev.filter((a) => !a.incluir))
+      ir(apuntes > 0 ? '/mapa' : '/material')
     }
   }
 
-  function convertirAqui() {
-    const resultado = convertirApunte(texto)
+  function convertirConMarcas(archivo: Archivo) {
+    const resultado = convertirApunte(textoDe(archivo))
     setRestos(resultado.restos)
     if (resultado.items.length === 0) {
-      setError(
-        'No se reconoció ningún ítem con las marcas. Revisa la chuleta de abajo, o mándaselo a Claude: es lo que mejor funciona con un apunte normal.',
-      )
+      setError('No se reconoció ningún ítem con las marcas. Guárdalo como material y usa a Claude tema por tema desde el mapa.')
       return
     }
     setError(null)
-    const paquete = validarPaquete({ curso: curso?.nombre, items: aBrutos(resultado.items) })
-    setValidado(paquete)
+    setValidado(validarPaquete({ curso: curso?.nombre, items: aBrutos(resultado.items) }))
     setPaso('revisar')
   }
 
@@ -119,69 +243,43 @@ export function Importar() {
       bruto = JSON.parse(limpio)
     } catch (e) {
       setError(
-        `El texto pegado no es JSON válido (${e instanceof Error ? e.message : 'error'}). Copia de nuevo desde el bloque de código completo, incluyendo la llave del principio y la del final.`,
+        `El texto pegado no es JSON válido (${e instanceof Error ? e.message : 'error'}). Copia el bloque de código completo, con la llave del principio y la del final.`,
       )
       return
     }
-    const resultado = validarPaquete(bruto)
-    setValidado(resultado)
-    setOrigen('json')
-    setNombreCurso(resultado.curso ?? '')
+    setValidado(validarPaquete(bruto))
     setPaso('revisar')
   }
 
-  async function guardar(aCursoNuevo: boolean) {
+  async function guardarRevisado(aCursoNuevo: boolean) {
     if (!validado?.ok) return
     let cursoId = curso?.id
     if (aCursoNuevo || !cursoId) {
-      const creado = await crearCurso(nombreCurso.trim() || validado.curso || 'Curso sin nombre')
+      const creado = await crearCurso(nombreCurso.trim() || validado.curso || 'Mi curso')
       cursoId = creado.id
       await guardarAjustes({ cursoActivoId: cursoId })
     }
-    const nuevos = aItems(validado.items, cursoId, origen)
+    const nuevos = aItems(validado.items, cursoId, 'json')
     await guardarItems(nuevos)
-
-    // El apunte original se guarda aparte: sirve para darle la primera pasada,
-    // que es leer con preguntas antes y volcado después.
-    const fuente = textoSeleccionado.trim()
-    if (fuente.length > 400) {
-      const cuenta = new Map<string, number>()
-      for (const i of nuevos) cuenta.set(i.bloque, (cuenta.get(i.bloque) ?? 0) + 1)
-      const bloquePrincipal = [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Sin bloque'
-      const secciones = detectarSecciones(fuente)
-      await db.fuentes.put({
-        id: nuevoId('f'),
-        cursoId,
-        bloque: bloquePrincipal,
-        titulo: fuente.split('\n').find((l) => l.trim().length > 3)?.slice(0, 70).trim() ?? 'Apunte',
-        texto: fuente,
-        creadoEn: Date.now(),
-        secciones,
-        // Al principio todo el apunte está en alcance; se ajusta en el mapa.
-        hasta: secciones.length - 1,
-        avance: 0,
-        terminada: false,
-      })
-    }
-
-    setAviso(`Se guardaron ${nuevos.length} ítems.`)
     setValidado(null)
-    setPaso('elegir')
-    setTexto('')
     setPegado('')
+    setAviso(`Se guardaron ${nuevos.length} ítems.`)
+    setPaso(archivos.length > 0 ? 'archivos' : 'elegir')
     ir('/material')
   }
-
-  const textoSeleccionado = paginas
-    ? paginas.filter((p) => elegidas.has(p.numero)).map((p) => p.texto).join('\n\n')
-    : texto
 
   return (
     <div>
       <div className="titulo-seccion">
-        <h1>Importar material</h1>
-        {paso !== 'elegir' && (
-          <button type="button" className="boton boton-chico" onClick={reiniciar}>Empezar de nuevo</button>
+        <h1>Importar</h1>
+        {archivos.length > 0 && (
+          <button
+            type="button"
+            className="boton boton-chico"
+            onClick={() => { setArchivos([]); setValidado(null); setPegado(''); setPaso('elegir') }}
+          >
+            Vaciar
+          </button>
         )}
       </div>
 
@@ -189,252 +287,288 @@ export function Importar() {
       {error && <div className="aviso-error">{error}</div>}
       {cargando && <p className="apunte">{cargando}</p>}
 
+      {cursos.length > 1 && paso !== 'revisar' && (
+        <label className="campo">
+          <span>Curso al que va este material</span>
+          <select value={curso?.id ?? ''} onChange={(e) => guardarAjustes({ cursoActivoId: e.target.value })}>
+            {cursos.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </label>
+      )}
+
+      {paso !== 'revisar' && (
+        <div className="botonera seccion">
+          <label className="boton boton-fuerte">
+            {archivos.length > 0 ? 'Agregar más archivos' : 'Elegir archivos'}
+            <input
+              type="file"
+              multiple
+              accept=".json,.md,.txt,.pdf,application/json,text/markdown,text/plain,application/pdf"
+              className="oculto-visual"
+              onChange={(e) => {
+                // Se copia la lista antes de limpiar el input: al vaciarlo, el
+                // FileList original queda inutilizable a mitad de la lectura.
+                const elegidos = Array.from(e.target.files ?? [])
+                e.target.value = ''
+                if (elegidos.length > 0) alElegirArchivos(elegidos)
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className="boton"
+            onClick={() => {
+              setArchivos((prev) => [...prev, {
+                id: nuevoId('a'), nombre: 'Texto pegado', clase: 'texto', elegidas: new Set(),
+                texto: '', bloque: '', incluir: true, origen: 'txt',
+              }])
+              setPaso('archivos')
+            }}
+          >
+            Pegar texto a mano
+          </button>
+        </div>
+      )}
+
       {paso === 'elegir' && (
         <>
           <p className="apunte">
-            Puedes traer un paquete de ítems (.json), un apunte (.md o .txt) o un PDF. También puedes
-            pegar el texto directamente.
+            Puedes elegir <strong>varios archivos de una vez</strong>: los PDF y apuntes de un ramo
+            entero, o paquetes de ítems que ya tengas. Cada archivo queda como un apunte aparte, con
+            su propio tema.
           </p>
-
-          <div className="botonera seccion">
-            <label className="boton boton-fuerte">
-              Elegir un archivo
-              <input
-                type="file"
-                accept=".json,.md,.txt,.pdf,application/json,text/markdown,text/plain,application/pdf"
-                className="oculto-visual"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) alElegirArchivo(f) }}
-              />
-            </label>
-            <button type="button" className="boton" onClick={() => setPaso('texto')}>
-              Pegar texto a mano
-            </button>
-          </div>
-
-          <hr className="filete" />
           <ChuletaMarcas />
         </>
       )}
 
-      {paso === 'texto' && (
+      {paso === 'archivos' && (
         <>
-          {paginas && (
-            <section className="seccion">
+          <p className="apunte">
+            Primero se guardan como <strong>material</strong>: el texto queda en la app para darle la
+            primera pasada y hacer volcados. Las preguntas se generan después, tema por tema, desde
+            el mapa. Así un apunte de 300 hojas no obliga a hacer todo de una.
+          </p>
+
+          {archivos.map((archivo) => (
+            <section key={archivo.id} className="hoja">
               <div className="titulo-seccion">
-                <h2>Elige qué páginas usar</h2>
-                <span className="lado numeral">{elegidas.size} de {paginas.length}</span>
+                <h2 style={{ fontSize: '1rem' }}>{archivo.nombre}</h2>
+                <label className="marca-check">
+                  <input
+                    type="checkbox"
+                    checked={archivo.incluir}
+                    onChange={(e) => actualizar(archivo.id, { incluir: e.target.checked })}
+                  />
+                  <span className="apunte">incluir</span>
+                </label>
               </div>
-              <p className="apunte">
-                Los PDF traen carátulas, índices y basura. Marca solo lo que sirve.
-              </p>
-              <ul className="lista-limpia">
-                {paginas.map((p) => (
-                  <li key={p.numero} className="renglon">
-                    <label className="marca-check crece" style={{ alignItems: 'flex-start' }}>
-                      <input
-                        type="checkbox"
-                        checked={elegidas.has(p.numero)}
-                        onChange={(e) => {
-                          const copia = new Set(elegidas)
-                          if (e.target.checked) copia.add(p.numero)
-                          else copia.delete(p.numero)
-                          setElegidas(copia)
-                          setTexto(
-                            paginas.filter((x) => copia.has(x.numero)).map((x) => x.texto).join('\n\n'),
-                          )
-                        }}
+
+              {archivo.clase === 'paquete' ? (
+                <p className="apunte">
+                  {archivo.paquete?.ok
+                    ? `Paquete de ítems listo: ${Object.entries(archivo.paquete.resumen).map(([t, n]) => `${n} ${NOMBRE_TIPO[t as TipoItem] ?? t}`).join(' · ')}`
+                    : `No se puede guardar: ${archivo.paquete?.errores[0]?.donde} — ${archivo.paquete?.errores[0]?.mensaje}`}
+                </p>
+              ) : (
+                <>
+                  <label className="campo">
+                    <span>Tema (así se agrupa en el mapa y en el material)</span>
+                    <input
+                      type="text"
+                      list="temas-usados"
+                      value={archivo.bloque}
+                      placeholder="Ej: Antijuridicidad"
+                      onChange={(e) => actualizar(archivo.id, { bloque: e.target.value })}
+                    />
+                  </label>
+
+                  {archivo.clase === 'pdf' && archivo.paginas && (
+                    <SelectorPaginas
+                      paginas={archivo.paginas}
+                      elegidas={archivo.elegidas}
+                      onCambiar={(nuevas) => actualizar(archivo.id, { elegidas: nuevas })}
+                    />
+                  )}
+
+                  {archivo.clase === 'texto' && (
+                    <label className="campo">
+                      <span>Texto</span>
+                      <textarea
+                        rows={archivo.texto ? 6 : 10}
+                        value={archivo.texto}
+                        placeholder="Pega acá el apunte"
+                        onChange={(e) => actualizar(archivo.id, { texto: e.target.value })}
                       />
-                      <span className="crece">
-                        <strong>Página {p.numero}</strong>
-                        <br />
-                        <span className="apunte">
-                          {p.texto.slice(0, 160).replace(/\s+/g, ' ') || '(sin texto: puede ser una imagen escaneada)'}
-                        </span>
-                      </span>
+                      <span className="contador">{archivo.texto.length.toLocaleString('es-CL')} caracteres</span>
                     </label>
-                  </li>
-                ))}
-              </ul>
+                  )}
+
+                  <div className="botonera">
+                    <button
+                      type="button"
+                      className="boton boton-chico"
+                      onClick={() => { setArchivoClaude(archivo.id); setTrozoActual(0) }}
+                      aria-pressed={elegidoParaClaude?.id === archivo.id}
+                    >
+                      Preparar preguntas de este
+                    </button>
+                    <button type="button" className="boton boton-chico" onClick={() => convertirConMarcas(archivo)}>
+                      Convertir con las marcas
+                    </button>
+                    <button
+                      type="button"
+                      className="boton boton-chico boton-peligro"
+                      onClick={() => setArchivos((prev) => prev.filter((a) => a.id !== archivo.id))}
+                    >
+                      Sacar
+                    </button>
+                  </div>
+                </>
+              )}
             </section>
+          ))}
+
+          <datalist id="temas-usados">
+            {bloquesUsados.map((b) => <option key={b} value={b} />)}
+          </datalist>
+
+          {cursos.length === 0 && (
+            <label className="campo">
+              <span>Nombre del curso nuevo</span>
+              <input type="text" value={nombreCurso} placeholder="Derecho Penal I" onChange={(e) => setNombreCurso(e.target.value)} />
+            </label>
           )}
 
-          <label className="campo">
-            <span>Texto del apunte (puedes corregirlo acá mismo)</span>
-            <textarea
-              rows={12}
-              value={paginas ? textoSeleccionado : texto}
-              onChange={(e) => { setTexto(e.target.value); setPaginas(null) }}
-            />
-            <span className="contador">{textoSeleccionado.length.toLocaleString('es-CL')} caracteres</span>
-          </label>
+          <div className="pie-fijo">
+            <button type="button" className="boton boton-fuerte boton-ancho" onClick={guardarTodo}>
+              Guardar {archivos.filter((a) => a.incluir).length} archivos como material
+            </button>
+          </div>
 
           <hr className="filete" />
 
-          <section className="seccion">
-            <div className="titulo-seccion">
-              <h2>Pásaselo a Claude</h2>
-              <span className="lado">lo que mejor funciona</span>
-            </div>
-            <p className="apunte">
-              La app arma el pedido completo: copias, lo pegas en Claude, y Claude te devuelve las
-              preguntas y las repreguntas ya armadas. Después pegas su respuesta acá abajo. La app
-              no manda nada por su cuenta: tú decides qué sale de aquí.
-            </p>
+          {elegidoParaClaude && (
+            <section className="seccion">
+              <div className="titulo-seccion">
+                <h2>Preguntas con Claude</h2>
+                <span className="lado">{elegidoParaClaude.nombre}</span>
+              </div>
+              <p className="apunte">
+                Opcional acá: también puedes guardar el material y pedirle a Claude tema por tema
+                desde el mapa, que es más liviano para un apunte largo.
+              </p>
 
-            <label className="marca-check" style={{ padding: '0.4rem 0' }}>
-              <input type="checkbox" checked={oral} onChange={(e) => setOral(e.target.checked)} />
-              <span>La prueba es oral: pídele más repreguntas encadenadas</span>
-            </label>
-
-            {trozos.length > 1 && (
-              <label className="campo">
-                <span>El apunte es largo: va por partes</span>
-                <select value={trozoActual} onChange={(e) => setTrozoActual(Number(e.target.value))}>
-                  {trozos.map((t, i) => (
-                    <option key={i} value={i}>Parte {t.numero} de {t.total}</option>
-                  ))}
-                </select>
-                <span className="apunte">
-                  Copia una parte, pégala en Claude, trae la respuesta, y vuelve por la siguiente.
-                </span>
+              <label className="marca-check" style={{ padding: '0.4rem 0' }}>
+                <input type="checkbox" checked={oral} onChange={(e) => setOral(e.target.checked)} />
+                <span>La prueba es oral: más repreguntas encadenadas</span>
               </label>
-            )}
 
-            <div className="botonera">
-              <button
-                type="button"
-                className="boton boton-fuerte"
-                disabled={!textoSeleccionado.trim()}
-                onClick={async () => {
-                  const trozo = trozos[trozoActual] ?? { numero: 1, total: 1, texto: textoSeleccionado }
-                  const pedido = armarPedido({
-                    curso: curso?.nombre ?? 'Mi curso',
-                    bloques,
-                    trozo,
-                    orientacionOral: oral,
-                  })
-                  const listo = await copiar(pedido)
-                  setAviso(
-                    listo
-                      ? 'Pedido copiado. Ábrelo en Claude, pégalo y trae la respuesta de vuelta acá.'
-                      : 'No se pudo copiar solo. Selecciona el texto de abajo y cópialo a mano.',
-                  )
-                  if (!listo) setPegado(pedido)
-                }}
-              >
-                Copiar el pedido para Claude
+              {trozos.length > 1 && (
+                <label className="campo">
+                  <span>Va por partes ({trozos.length} en total)</span>
+                  <select value={trozoActual} onChange={(e) => setTrozoActual(Number(e.target.value))}>
+                    {trozos.map((t, i) => <option key={i} value={i}>Parte {t.numero} de {t.total}</option>)}
+                  </select>
+                </label>
+              )}
+
+              <div className="botonera">
+                <button
+                  type="button"
+                  className="boton boton-fuerte"
+                  disabled={trozos.length === 0}
+                  onClick={async () => {
+                    const trozo = trozos[trozoActual] ?? trozos[0]
+                    const listo = await copiar(armarPedido({
+                      curso: curso?.nombre ?? 'Mi curso',
+                      bloques: bloquesUsados,
+                      trozo,
+                      orientacionOral: oral,
+                    }))
+                    setAviso(listo ? 'Pedido copiado. Pégalo en Claude y trae la respuesta acá.' : 'No se pudo copiar solo.')
+                  }}
+                >
+                  Copiar el pedido para Claude
+                </button>
+              </div>
+
+              <label className="campo" style={{ marginTop: '1rem' }}>
+                <span>Pega acá la respuesta de Claude</span>
+                <textarea rows={5} value={pegado} onChange={(e) => setPegado(e.target.value)} />
+              </label>
+              <button type="button" className="boton" disabled={!pegado.trim()} onClick={revisarPegado}>
+                Revisar lo que trajo Claude
               </button>
-            </div>
-
-            <label className="campo" style={{ marginTop: '1rem' }}>
-              <span>Pega acá la respuesta de Claude</span>
-              <textarea
-                rows={6}
-                value={pegado}
-                placeholder='{ "recitar": 1, "curso": "...", "items": [ ... ] }'
-                onChange={(e) => setPegado(e.target.value)}
-              />
-            </label>
-            <button
-              type="button"
-              className="boton"
-              disabled={!pegado.trim()}
-              onClick={revisarPegado}
-            >
-              Revisar lo que trajo Claude
-            </button>
-          </section>
-
-          <hr className="filete" />
-
-          <section className="seccion">
-            <h2>O convertirlo aquí mismo, sin internet</h2>
-            <p className="apunte">
-              Funciona si el apunte usa las marcas de la chuleta. Si es texto corrido, va a reconocer
-              poco: para eso está Claude.
-            </p>
-            <button
-              type="button"
-              className="boton"
-              disabled={!textoSeleccionado.trim()}
-              onClick={convertirAqui}
-            >
-              Convertir con las marcas
-            </button>
-          </section>
+            </section>
+          )}
 
           <ChuletaMarcas />
         </>
       )}
 
       {paso === 'revisar' && validado && (
-        <>
-          <section className="seccion">
-            <div className="titulo-seccion">
-              <h2>Revisión</h2>
-              <span className="lado numeral">{validado.items.length} ítems</span>
+        <section className="seccion">
+          <div className="titulo-seccion">
+            <h2>Revisión</h2>
+            <span className="lado numeral">{validado.items.length} ítems</span>
+          </div>
+
+          {validado.errores.length > 0 && (
+            <div className="aviso-error">
+              <strong>Hay {validado.errores.length} problemas. No se guarda nada hasta arreglarlos:</strong>
+              <ul style={{ margin: '0.4rem 0 0 1rem', padding: 0 }}>
+                {validado.errores.slice(0, 25).map((e, i) => (
+                  <li key={i}><strong>{e.donde}:</strong> {e.mensaje}</li>
+                ))}
+              </ul>
+              {validado.errores.length > 25 && <p style={{ margin: '0.4rem 0 0' }}>…y {validado.errores.length - 25} más.</p>}
             </div>
+          )}
 
-            {validado.errores.length > 0 && (
-              <div className="aviso-error">
-                <strong>Hay {validado.errores.length} problemas. No se guarda nada hasta arreglarlos:</strong>
-                <ul style={{ margin: '0.4rem 0 0 1rem', padding: 0 }}>
-                  {validado.errores.slice(0, 25).map((e, i) => (
-                    <li key={i}><strong>{e.donde}:</strong> {e.mensaje}</li>
-                  ))}
-                </ul>
-                {validado.errores.length > 25 && (
-                  <p style={{ margin: '0.4rem 0 0' }}>…y {validado.errores.length - 25} más.</p>
-                )}
-              </div>
-            )}
+          <ul className="lista-limpia">
+            {Object.entries(validado.resumen).map(([tipo, cuantos]) => (
+              <li key={tipo} className="renglon">
+                <span className="crece">{NOMBRE_TIPO[tipo as TipoItem] ?? tipo}</span>
+                <span className="numeral">{cuantos}</span>
+              </li>
+            ))}
+          </ul>
 
-            <ul className="lista-limpia">
-              {Object.entries(validado.resumen).map(([tipo, cuantos]) => (
-                <li key={tipo} className="renglon">
-                  <span className="crece">{NOMBRE_TIPO[tipo as TipoItem] ?? tipo}</span>
-                  <span className="numeral">{cuantos}</span>
-                </li>
-              ))}
-            </ul>
+          {restos.length > 0 && (
+            <details style={{ marginTop: '1rem' }}>
+              <summary className="apunte">{restos.length} líneas quedaron fuera (no tenían marca)</summary>
+              <ul className="apunte" style={{ maxHeight: '14rem', overflow: 'auto' }}>
+                {restos.slice(0, 100).map((r, i) => <li key={i}>{r}</li>)}
+              </ul>
+            </details>
+          )}
 
-            {restos.length > 0 && (
-              <details style={{ marginTop: '1rem' }}>
-                <summary className="apunte">
-                  {restos.length} líneas quedaron fuera (no tenían marca)
-                </summary>
-                <ul className="apunte" style={{ maxHeight: '14rem', overflow: 'auto' }}>
-                  {restos.slice(0, 100).map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
-              </details>
-            )}
+          <div className="botonera seccion">
+            <button type="button" className="boton" onClick={() => setPaso(archivos.length > 0 ? 'archivos' : 'elegir')}>
+              Volver
+            </button>
+          </div>
 
-            {validado.ok && (
-              <>
-                <hr className="filete" />
-                <label className="campo">
-                  <span>Nombre del curso, si lo vas a crear nuevo</span>
-                  <input
-                    type="text"
-                    value={nombreCurso}
-                    placeholder={validado.curso ?? 'Mi curso'}
-                    onChange={(e) => setNombreCurso(e.target.value)}
-                  />
-                </label>
-                <div className="botonera-columna">
-                  {curso && (
-                    <button type="button" className="boton boton-fuerte boton-ancho" onClick={() => guardar(false)}>
-                      Guardar en “{curso.nombre}”
-                    </button>
-                  )}
-                  <button type="button" className="boton boton-ancho" onClick={() => guardar(true)}>
-                    {cursos.length === 0 ? 'Crear el curso y guardar' : 'Guardar en un curso nuevo'}
+          {validado.ok && (
+            <>
+              <hr className="filete" />
+              <label className="campo">
+                <span>Nombre del curso, si lo vas a crear nuevo</span>
+                <input type="text" value={nombreCurso} placeholder={validado.curso ?? 'Mi curso'} onChange={(e) => setNombreCurso(e.target.value)} />
+              </label>
+              <div className="botonera-columna">
+                {curso && (
+                  <button type="button" className="boton boton-fuerte boton-ancho" onClick={() => guardarRevisado(false)}>
+                    Guardar en “{curso.nombre}”
                   </button>
-                </div>
-              </>
-            )}
-          </section>
-        </>
+                )}
+                <button type="button" className="boton boton-ancho" onClick={() => guardarRevisado(true)}>
+                  {cursos.length === 0 ? 'Crear el curso y guardar' : 'Guardar en un curso nuevo'}
+                </button>
+              </div>
+            </>
+          )}
+        </section>
       )}
     </div>
   )
@@ -444,6 +578,7 @@ function aBrutos(items: ReturnType<typeof convertirApunte>['items']): unknown[] 
   return items.map((i) => ({
     tipo: i.tipo,
     bloque: i.bloque,
+    seccion: i.seccion,
     ref: i.ref,
     ...(i.datos as object),
     hijos: aBrutos(i.hijos),
@@ -457,7 +592,7 @@ function ChuletaMarcas() {
       <pre
         className="apunte"
         style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--mono)', fontSize: '0.78rem', lineHeight: 1.6 }}
-      >{`## Obligaciones            ← cambia el bloque
+      >{`## Obligaciones            ← cambia el tema
 [art. 1489 CC]            ← referencia para lo que viene
 
 F: La condición resolutoria tácita opera de pleno derecho.
@@ -468,8 +603,6 @@ J: Requiere sentencia; el 1489 da la opción de cumplimiento o resolución.
 LISTA: Requisitos del acto jurídico [art. 1445]
 - capaz
 - consentimiento sin vicios
-- objeto lícito
-- causa lícita
 
 ALT: ¿Qué exige la resolución por incumplimiento?
 - Opera de pleno derecho
@@ -481,10 +614,7 @@ TEXTO 1545: Todo contrato legalmente celebrado es una ley para los contratantes.
 TRIAJE(posturas): Refiérase a la culpa en abstracto o en concreto.
 DES: Explique los elementos de la responsabilidad extracontractual
 - capacidad
-- hecho voluntario
-- dolo o culpa
-- daño
-- causalidad`}</pre>
+- daño`}</pre>
     </details>
   )
 }
