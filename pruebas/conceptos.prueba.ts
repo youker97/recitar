@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { conceptosDeBloque, conceptosDeTexto, presentar, revisarVolcado } from '../src/logica/conceptos'
+import { conceptosDeBloque, conceptosDeTexto, revisarVolcado } from '../src/logica/conceptos'
+import { presentar } from '../src/logica/mapa'
 import { calibracion, prontitudEn, retrievabilidad } from '../src/logica/prontitud'
 import { progresoNuevo } from '../src/logica/programador'
 import type { Item, Revision } from '../src/datos/tipos'

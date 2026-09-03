@@ -4,7 +4,7 @@ import { guardarItems } from '../datos/repos'
 import { useCursoActivo, useFuentes, useItems } from '../datos/hooks'
 import type { DatosConcepto, Item, SeccionApunte } from '../datos/tipos'
 import { mapaDe } from './Pasada'
-import { textoDeSeccion } from '../logica/mapa'
+import { presentar, textoDeSeccion } from '../logica/mapa'
 import { conceptosDeTexto } from '../logica/conceptos'
 import { aparicionesDe, buscarDefinicion } from '../logica/definiciones'
 import { normalizar } from '../logica/comparar'
@@ -209,7 +209,7 @@ export function Vocabulario() {
             <div className="opciones">
               {mapaDe(f).slice(0, (f.hasta ?? mapaDe(f).length - 1) + 1).map((s, i) => (
                 <button key={i} type="button" className="opcion" onClick={() => empezar(f.id, i)}>
-                  {s.titulo}
+                  {presentar(s.titulo)}
                 </button>
               ))}
             </div>
@@ -224,7 +224,7 @@ export function Vocabulario() {
     return (
       <div>
         <div className="titulo-seccion">
-          <h2>{seccion.titulo}</h2>
+          <h2>{presentar(seccion.titulo)}</h2>
           <span className="lado numeral">{marcados} de {terminos.length}</span>
         </div>
         {terminos.length === 0 ? (

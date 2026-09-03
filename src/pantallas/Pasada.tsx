@@ -3,7 +3,7 @@ import { db } from '../datos/db'
 import { useAjustes, useCursoActivo, useFuentes, useItems } from '../datos/hooks'
 import type { Fuente, Item, SeccionApunte } from '../datos/tipos'
 import { partirTexto } from '../importar/claude'
-import { detectarSecciones, textoDeSeccion } from '../logica/mapa'
+import { detectarSecciones, presentar, textoDeSeccion } from '../logica/mapa'
 import { conceptosDeBloque, conceptosDeTexto, revisarVolcado } from '../logica/conceptos'
 import { contarPalabras } from '../logica/corrector'
 import { contiene, normalizar } from '../logica/comparar'
@@ -202,7 +202,7 @@ export function Pasada() {
         <div style={{ width: `${(paso / pasos.length) * 100}%` }} />
       </div>
       <div className="titulo-seccion">
-        <h2>{actual.seccion.titulo}</h2>
+        <h2>{presentar(actual.seccion.titulo)}</h2>
         <span className="lado numeral">{paso + 1} de {pasos.length}</span>
       </div>
 

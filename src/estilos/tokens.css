@@ -1,24 +1,48 @@
-:root {
-  color-scheme: light dark;
+/* Paleta: Colo-Colo. Negro, blanco y el dorado de las estrellas.
+ *
+ * Regla que manda sobre todo lo demás: se tiene que poder leer una hora
+ * seguida sin que moleste. Por eso el negro no es negro puro (el texto blanco
+ * sobre negro absoluto "vibra" en pantallas OLED) y el dorado nunca lleva
+ * texto largo encima: es para acentos, no para párrafos.
+ *
+ * El tema lo fija App.tsx en <html data-tema="claro|oscuro">, así los colores
+ * viven en un solo lugar.
+ */
 
-  --papel: #f4f1e8;
-  --papel-hondo: #eae5d8;
-  --papel-alto: #fbf9f3;
-  --tinta: #1b1917;
-  --tinta-suave: #55504a;
-  --tinta-tenue: #837c72;
-  --linea: #cfc7b5;
-  --linea-fuerte: #a9a08c;
-  --rojo: #8f2c22;
-  --rojo-suave: #f3e2df;
-  --verde: #2e5a38;
-  --verde-suave: #e0e9df;
-  --azul: #2b4a6f;
+:root {
+  color-scheme: light;
+
+  --papel: #f6f5f2;
+  --papel-hondo: #eceae4;
+  --papel-alto: #ffffff;
+  --papel-realce: #f1efe9;
+
+  --tinta: #16161a;
+  --tinta-suave: #4c4c55;
+  --tinta-tenue: #6b6a74;
+
+  --linea: #e3e1db;
+  --linea-fuerte: #c3c0b8;
+
+  /* El acento de la casa. --oro lleva texto; --oro-vivo es relleno. */
+  --oro: #8a6512;
+  --oro-vivo: #c9962a;
+  --oro-suave: #f8efd9;
+  --sobre-oro: #14130e;
+
+  --rojo: #9a2f24;
+  --rojo-suave: #f6e4e1;
+  --verde: #2c5b39;
+  --verde-suave: #e2ecdf;
+  --azul: #29496e;
   --ambar: #7a5a12;
-  --ambar-suave: #f2e9d2;
+  --ambar-suave: #f6ecd4;
   --foco: #1b4fa8;
-  --renglon: rgba(120, 105, 75, 0.07);
-  --sombra: rgba(60, 50, 30, 0.10);
+
+  --renglon: rgba(120, 105, 75, 0.055);
+  --franja: rgba(0, 0, 0, 0.028);
+  --sombra-1: 0 1px 2px rgba(28, 24, 14, 0.06), 0 1px 1px rgba(28, 24, 14, 0.04);
+  --sombra-2: 0 2px 4px rgba(28, 24, 14, 0.07), 0 6px 16px rgba(28, 24, 14, 0.07);
 
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -26,29 +50,43 @@
 
   --ancho: 44rem;
   --paso: 0.75rem;
+  --curva: 10px;
+  --curva-chica: 8px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --papel: #171614;
-    --papel-hondo: #100f0e;
-    --papel-alto: #201e1b;
-    --tinta: #ece7dc;
-    --tinta-suave: #b3ac9f;
-    --tinta-tenue: #8b8478;
-    --linea: #3b3833;
-    --linea-fuerte: #565149;
-    --rojo: #d9776b;
-    --rojo-suave: #2e1e1c;
-    --verde: #8fbb95;
-    --verde-suave: #1c2820;
-    --azul: #8fb0d6;
-    --ambar: #d3b169;
-    --ambar-suave: #2a2418;
-    --foco: #7fa9ea;
-    --renglon: rgba(255, 250, 235, 0.035);
-    --sombra: rgba(0, 0, 0, 0.45);
-  }
+:root[data-tema='oscuro'] {
+  color-scheme: dark;
+
+  --papel: #101013;
+  --papel-hondo: #08080a;
+  --papel-alto: #1a1a1f;
+  --papel-realce: #24242b;
+
+  --tinta: #ecebf0;
+  --tinta-suave: #b2b0bb;
+  --tinta-tenue: #8a8894;
+
+  --linea: #2c2c34;
+  --linea-fuerte: #43434e;
+
+  --oro: #e9c076;
+  --oro-vivo: #d7a442;
+  --oro-suave: #2a2312;
+  --sobre-oro: #14130e;
+
+  --rojo: #e88a80;
+  --rojo-suave: #2d1a18;
+  --verde: #8bc99c;
+  --verde-suave: #17251b;
+  --azul: #9bb9dd;
+  --ambar: #d9b76e;
+  --ambar-suave: #241e12;
+  --foco: #8fb6f2;
+
+  --renglon: transparent;
+  --franja: rgba(255, 255, 255, 0.035);
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --sombra-2: 0 2px 6px rgba(0, 0, 0, 0.55), 0 10px 24px rgba(0, 0, 0, 0.4);
 }
 
 html[data-texto='grande'] { font-size: 118%; }

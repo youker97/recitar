@@ -16,6 +16,7 @@ import { Pasada } from './pantallas/Pasada'
 import { Mapa } from './pantallas/Mapa'
 import { Vocabulario } from './pantallas/Vocabulario'
 import { Sesion } from './modos/Sesion'
+import { Escudo } from './componentes/Identidad'
 
 const NAVEGACION = [
   { ruta: '/', texto: 'Hoy' },
@@ -39,6 +40,21 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.texto = ajustes.tamanoTexto
   }, [ajustes.tamanoTexto])
+
+  // El tema se resuelve acá y queda en <html data-tema>, así el CSS no tiene
+  // que repetir la paleta oscura en dos selectores.
+  useEffect(() => {
+    const raiz = document.documentElement
+    if (ajustes.tema !== 'auto') {
+      raiz.dataset.tema = ajustes.tema === 'oscuro' ? 'oscuro' : 'claro'
+      return
+    }
+    const consulta = window.matchMedia('(prefers-color-scheme: dark)')
+    const aplicar = () => { raiz.dataset.tema = consulta.matches ? 'oscuro' : 'claro' }
+    aplicar()
+    consulta.addEventListener('change', aplicar)
+    return () => consulta.removeEventListener('change', aplicar)
+  }, [ajustes.tema])
 
   let pantalla
   switch (ruta) {
@@ -71,7 +87,12 @@ export default function App() {
     <>
       <header className="cinta">
         <div className="cinta-dentro">
-          <a className="marca" href="#/">Recitar<span>.</span></a>
+          <a className="marca" href="#/">
+            {ajustes.escudo
+              ? <img className="emblema" src={ajustes.escudo} alt="" />
+              : <Escudo />}
+            Recitar<span>.</span>
+          </a>
           {!enSesion && (
             <nav aria-label="Secciones">
               {NAVEGACION.map((n) => (

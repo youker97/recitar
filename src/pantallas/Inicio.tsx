@@ -13,6 +13,7 @@ import { proximaJugada } from '../logica/siguiente'
 import { dominioGeneral, dominioPorBloque } from '../logica/dominio'
 import { Racha } from '../componentes/Racha'
 import { ListaDominio } from '../componentes/Dominio'
+import { Adorno } from '../componentes/Identidad'
 
 export function Inicio() {
   const ajustes = useAjustes()
@@ -118,6 +119,7 @@ export function Inicio() {
 
       <section className="seccion">
         <div className={`jugada${jugada.freno ? ' jugada-freno' : ''}`}>
+          {ajustes.escudo && <img className="jugada-escudo" src={ajustes.escudo} alt="" />}
           <span className="jugada-rotulo">{jugada.freno ? 'Alto' : 'Lo próximo'}</span>
           <h2>{jugada.titulo}</h2>
           <p>{jugada.texto}</p>
@@ -320,6 +322,8 @@ export function Inicio() {
           </section>
         </>
       )}
+
+      <Adorno />
     </div>
   )
 }

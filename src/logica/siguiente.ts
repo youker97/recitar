@@ -9,6 +9,7 @@ import type { ItemConProgreso } from './cola'
 import { contarPendientes } from './cola'
 import { dominioDe } from './dominio'
 import { normalizar } from './comparar'
+import { presentar } from './mapa'
 
 export interface Jugada {
   clave: string
@@ -68,7 +69,7 @@ export function proximaJugada(entrada: EntradaJugada): Jugada {
     if (dominio < DOMINIO_FLOJO || volcadoFlojo) {
       return {
         clave: `freno-${seccion.titulo}`,
-        titulo: `No avances todavía: ${seccion.titulo}`,
+        titulo: `No avances todavía: ${presentar(seccion.titulo)}`,
         texto: `Ese tema va en ${dominio}%. Si sigues agregando materia nueva vas a terminar con cinco temas a medias. Termina este primero.`,
         etiqueta: 'Repasar ese tema',
         ruta: `#/estudiar?items=${delTema.slice(0, 40).map((d) => d.item.id).join(',')}`,
@@ -94,7 +95,7 @@ export function proximaJugada(entrada: EntradaJugada): Jugada {
       if (!tienePalabras) {
         return {
           clave: `vocabulario-${f.id}-${pendiente}`,
-          titulo: `Antes de leer: las palabras de ${s.titulo}`,
+          titulo: `Antes de leer: las palabras de ${presentar(s.titulo)}`,
           texto: 'Marca cuáles no conoces. Son cinco minutos y hacen que la lectura sirva: leer con términos desconocidos no es estudiar.',
           etiqueta: 'Ver el vocabulario',
           ruta: `#/vocabulario?fuente=${f.id}&tema=${pendiente}`,
@@ -102,7 +103,7 @@ export function proximaJugada(entrada: EntradaJugada): Jugada {
       }
       return {
         clave: `pasada-${f.id}-${pendiente}`,
-        titulo: `Te toca: ${s.titulo}`,
+        titulo: `Te toca: ${presentar(s.titulo)}`,
         texto: `De "${f.titulo}". Unos ${minutos} minutos: lo lees una vez con calma y después lo escribes sin mirar.`,
         etiqueta: 'Empezar la primera pasada',
         ruta: `#/pasada?fuente=${f.id}`,
