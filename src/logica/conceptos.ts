@@ -5,7 +5,7 @@
 // cuando importas más.
 
 import type {
-  DatosAlternativas, DatosArticulo, DatosDesarrollo, DatosLista,
+  DatosAlternativas, DatosArticulo, DatosConcepto, DatosDesarrollo, DatosLista,
   DatosRepregunta, DatosTextoLegal, DatosVF, Item,
 } from '../datos/tipos'
 import { clavesDe, puntosDe } from './corrector'
@@ -52,6 +52,11 @@ function terminosDe(item: Item): string[] {
     case 'repregunta': {
       const d = item.datos as DatosRepregunta
       return clavesDe({ texto: d.respuesta }, 2)
+    }
+    case 'concepto': {
+      // El término tal cual: es justo lo que un volcado tiene que contener.
+      const d = item.datos as DatosConcepto
+      return [d.termino]
     }
     default:
       // El triaje entrena identificar la pregunta, no producir contenido.

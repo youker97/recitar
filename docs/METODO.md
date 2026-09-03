@@ -47,14 +47,20 @@ maneja el vocabulario del ramo. "Enajenación", "antijuridicidad", "imputación
 objetiva" no se explican, se usan.
 
 **En la app:** la pantalla **Vocabulario**, antes de la primera pasada de cada
-tema. Saca los términos que se repiten en el tema y te los pasa uno por uno —*la
-sé / más o menos / no la sé*—, y de las que dijiste saber te hace escribir tres,
-porque decir "esa la sé" es gratis (es el punto 6 aplicado a las palabras). Las
-que el propio apunte define se resuelven sin internet; las que da por sabidas
-van juntas en un solo pedido a Claude, con las frases donde aparecen, y vuelven
-marcadas con su origen para saber cuáles contrastar con el profesor. Después se
-estudian como cualquier otro ítem: en los dos sentidos y con la frase del apunte
-con la palabra tapada.
+tema. El texto del tema se manda entero a Claude y vuelve con los términos y su
+definición; tú marcas cuáles ya sabías —*la sé / más o menos / no la sé*, sin
+ver las definiciones, que si las lees primero crees que las sabías todas— y se
+estudian las otras. Cada definición dice si estaba en el apunte o si Claude la
+completó, para saber cuáles contrastar con el profesor.
+
+Ese trabajo previo lo hace Claude y no la app **a propósito**, y la primera
+versión hizo justo lo contrario: sacaba los términos contando qué frases se
+repetían y buscaba la definición con fórmulas ("se entiende por…"). Salía
+basura. "Como sucede" y "esta teoría" se repiten mucho y no son conceptos, y la
+frase que contiene una fórmula definitoria casi nunca define el término que uno
+buscaba. Ninguna regla escrita a mano distingue "posición de garante" de "esta
+teoría" sin entender de qué habla el texto. Estudiar con material malo es peor
+que no estudiar: te aprendes el ruido.
 
 ## 4. Equivocarse antes de leer
 

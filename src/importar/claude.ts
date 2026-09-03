@@ -264,38 +264,70 @@ export function leerCorreccion(bruto: string, cuantosPuntos: number): Correccion
 }
 
 // ---------------------------------------------------------------------------
-// Vocabulario de un tema: los términos que no conozco, definidos en el sentido
-// que les da este ramo. Va todo en un solo pedido, para no tener que copiar y
-// pegar una vez por palabra.
+// Vocabulario de un tema.
+//
+// Antes la app sacaba los términos sola, contando qué frases se repetían, y
+// buscaba la definición dentro del apunte con unas fórmulas ("se entiende
+// por…"). Salía basura: "como sucede" y "esta teoría" se repiten mucho y no
+// son conceptos, y la frase que contiene una fórmula casi nunca es la
+// definición. Ninguna regla escrita a mano distingue "posición de garante" de
+// "esta teoría" sin entender de qué habla el texto.
+//
+// Ahora el trabajo previo lo hace Claude entero —qué términos y qué dice cada
+// uno— y la app solo pregunta y programa. Una copiada y una pegada por tema.
 // ---------------------------------------------------------------------------
-
-export interface TerminoSinDefinir {
-  termino: string
-  /** Frases del apunte donde aparece, para que la definición sea la de este ramo. */
-  apariciones: string[]
-}
 
 export function armarPedidoVocabulario(o: {
   curso: string
   tema: string
-  terminos: TerminoSinDefinir[]
+  trozo: TrozoTexto
 }): string {
-  const lista = o.terminos
-    .map((t, i) => {
-      const contexto = t.apariciones.length
-        ? t.apariciones.map((a) => `   · "${a}"`).join('\n')
-        : '   · (no aparece explicado en el apunte)'
-      return `${i + 1}. ${t.termino}\n${contexto}`
-    })
-    .join('\n\n')
+  const deParte = o.trozo.total > 1
+    ? `\n\nEste es el trozo ${o.trozo.numero} de ${o.trozo.total} del tema: saca el vocabulario de este trozo nomás.`
+    : ''
 
-  return `Estudio Derecho en Chile. Estoy con el tema "${o.tema}" del ramo ${o.curso} y hay términos
-que no tengo claros. Te paso cada uno con las frases del apunte donde aparece.
+  return `Estudio Derecho en Chile. Te paso el texto de un tema de mi apunte de ${o.curso}:
+"${o.tema}".${deParte}
 
-Necesito, para cada término, una definición en el sentido que le da ESTE ramo y este apunte, no la
-del diccionario. Si el apunte no lo define, dedúcelo del contexto y de la dogmática chilena, y dilo.
+Quiero el vocabulario de ese tema: los términos que hay que tener claros para
+poder leerlo, con su definición.
 
-${lista}
+QUÉ CUENTA COMO TÉRMINO
+- Instituciones, doctrinas, categorías dogmáticas y conceptos técnicos:
+  "imputación objetiva", "posición de garante", "bien jurídico", "iter criminis".
+- Latinismos y expresiones de oficio: "conditio sine qua non", "dolo eventual".
+- Pares que el apunte usa contrapuestos: si están "delitos de resultado" y
+  "delitos de mera actividad", van los dos, y la definición de cada uno dice
+  en qué se opone al otro.
+- Una teoría con nombre de autor, si el apunte la nombra así.
+
+QUÉ NO CUENTA, por mucho que se repita en el texto
+- Pedazos de oración: "como sucede", "esta teoría", "en cambio", "por su parte",
+  "elementos objetivos". Si no se puede decir "X es…", no es un término.
+- Palabras del castellano común sin sentido técnico propio en este ramo.
+- El título del tema.
+- Dos formas de lo mismo: elige una. Si está "bien jurídico", no pongas además
+  "bienes jurídicos".
+
+CUÁNTOS
+Entre 10 y 20. Si el tema da para menos, dame menos: prefiero doce buenos que
+veinte con relleno. Ordénalos como aparecen en el texto, no alfabéticamente.
+
+PARA CADA UNO
+- "definicion": dos o tres líneas, en el sentido que le da ESTE ramo y este
+  apunte, escrita como la daría yo en una prueba y no como un diccionario. Si
+  hay artículo aplicable, nómbralo; si no estás seguro del número, no lo pongas.
+- "contexto": una frase del apunte donde el término se usa, copiada tal cual
+  y completa. Sirve para preguntármelo dentro de una oración. Si no hay una
+  frase clara, deja el campo fuera antes que inventarla.
+- "fuente": "apunte" si la definición está dicha en el texto que te paso,
+  "claude" si la tuviste que completar con dogmática chilena. Necesito
+  distinguirlas para saber cuáles revisar con mi profesor.
+
+TEXTO DEL TEMA
+-----
+${o.trozo.texto}
+-----
 
 Devuelve SOLO este JSON, dentro de un bloque de código:
 
@@ -304,20 +336,12 @@ Devuelve SOLO este JSON, dentro de un bloque de código:
   "items": [
     {
       "tipo": "concepto",
-      "termino": "el término tal como te lo pasé",
-      "definicion": "dos o tres líneas, en el sentido de este ramo, con el artículo si corresponde",
-      "contexto": "la frase del apunte donde aparece, copiada tal cual",
-      "fuente": "apunte" | "claude",
+      "termino": "posición de garante",
+      "definicion": "Deber jurídico específico de evitar un resultado...",
+      "contexto": "la frase del apunte, copiada tal cual",
+      "fuente": "apunte",
       "ref": "de dónde sale: artículo, autor o el tema"
     }
   ]
-}
-
-Reglas:
-- "fuente" es "apunte" si la definición está en las frases que te pasé, y "claude" si la tuviste que
-  deducir. Necesito distinguirlas para saber cuáles revisar con mi profesor.
-- Nada de definiciones de diccionario ni de otro país: derecho chileno.
-- Si un término tiene un sentido amplio y uno restringido, dilos los dos en una línea cada uno.
-- Si el término no es un concepto jurídico sino una frase cualquiera del texto, omítelo.
-- No inventes artículos. Si no estás seguro del número, no lo pongas.`
+}`
 }

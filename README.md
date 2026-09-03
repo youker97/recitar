@@ -59,22 +59,29 @@ corrigen solos siempre, sin internet ni ayuda.
 ### Vocabulario: primero las palabras
 
 Leer un tema con diez términos que no conoces no es estudiar, es decodificar
-ruido. Antes de la primera pasada, **Vocabulario** saca los términos del tema y
-te los pasa uno por uno: *la sé / más o menos / no la sé*. De las que dijiste
-saber te toma tres al azar y te las hace escribir, porque ahí es donde uno se
-engaña. Después:
+ruido. Antes de la primera pasada, **Vocabulario** trabaja así:
 
-- Las que **el propio apunte define**, las resuelve sola: busca la frase
-  definitoria y te la muestra. Sin internet.
-- Las que el apunte da por sabidas van **todas juntas en un solo pedido** a
-  Claude, con las frases donde aparecen para que las defina en el sentido de
-  ese ramo. Una copiada y una pegada por tema, no una por palabra.
-- Cada definición queda marcada con su origen. Las que dedujo Claude te lo
-  dicen al estudiarlas: son las que hay que contrastar con tu profesor.
+1. **Una copiada y una pegada.** El texto del tema entero se manda a Claude, que
+   devuelve los términos que hay que tener claros con su definición en el
+   sentido de ese ramo, y la frase del apunte donde se usan.
+2. **Marcas cuáles ya sabías**: *la sé / más o menos / no la sé*, un toque cada
+   una. Las definiciones no se muestran en ese paso a propósito: si las lees
+   primero, vas a creer que las sabías todas.
+3. Se estudian **ahora** las que no sabías. Las que dijiste saber quedan
+   guardadas y entran solas a las sesiones: ahí se verá si era cierto.
 
-Guardadas, se estudian como todo lo demás: te pregunta qué significa, de vez en
-cuando al revés (te da la definición y pides el término) y con la frase del
-apunte con la palabra tapada.
+Cada definición dice si estaba en el apunte o si Claude la completó con
+dogmática chilena; las segundas te lo avisan al estudiarlas, para que las
+contrastes con tu profesor. Después se preguntan como todo lo demás: qué
+significa, de vez en cuando al revés (te doy la definición, pones el término) y
+con la frase del apunte con la palabra tapada.
+
+**Por qué esto lo hace Claude y no la app.** La primera versión sacaba los
+términos sola, contando qué frases se repetían, y buscaba la definición con
+fórmulas ("se entiende por…"). Salía basura: ofrecía "como sucede" y "esta
+teoría" como si fueran conceptos, y de *bien jurídico* daba una frase que no
+definía nada. Ninguna regla escrita a mano distingue "posición de garante" de
+"esta teoría" sin entender de qué habla el texto.
 
 Cada decisión de diseño responde a un hallazgo concreto sobre cómo se aprende:
 está explicado con sus fuentes en [docs/METODO.md](docs/METODO.md).

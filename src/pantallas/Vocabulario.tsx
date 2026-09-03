@@ -2,33 +2,29 @@ import { useMemo, useState } from 'react'
 import { nuevoId } from '../datos/db'
 import { guardarItems } from '../datos/repos'
 import { useCursoActivo, useFuentes, useItems } from '../datos/hooks'
-import type { DatosConcepto, Item, SeccionApunte } from '../datos/tipos'
+import type { DatosConcepto, Fuente, Item, SeccionApunte } from '../datos/tipos'
 import { mapaDe } from './Pasada'
 import { presentar, textoDeSeccion } from '../logica/mapa'
-import { conceptosDeTexto } from '../logica/conceptos'
-import { aparicionesDe, buscarDefinicion } from '../logica/definiciones'
 import { normalizar } from '../logica/comparar'
-import { contarPalabras } from '../logica/corrector'
-import { armarPedidoVocabulario, copiar, limpiarRespuesta } from '../importar/claude'
+import { armarPedidoVocabulario, copiar, limpiarRespuesta, partirTexto } from '../importar/claude'
 import { validarPaquete } from '../datos/esquema'
 import { ir, useUbicacion } from '../rutas'
 
-type Paso = 'elegir' | 'triaje' | 'verificar' | 'definir'
+/** Un tema de apunte normal entra completo; solo se parte si es enorme. */
+const LARGO_VOCABULARIO = 18000
+
+type Paso = 'elegir' | 'traer' | 'triaje'
 type Marca = 'se' | 'masOMenos' | 'no'
-
-interface Definicion {
-  definicion: string
-  contexto?: string
-  fuente: 'apunte' | 'claude' | 'propia'
-}
-
-const TOPE_TERMINOS = 24
-const CUANTAS_VERIFICAR = 3
 
 /**
  * Vocabulario del tema: sacarse de encima las palabras que no conoces antes de
  * leer. Leer un texto con diez términos desconocidos no es estudiar, es
  * decodificar ruido.
+ *
+ * Los términos y sus definiciones los trae Claude de una vez. La app no
+ * intenta adivinar cuáles son: contando palabras repetidas salían "como
+ * sucede" y "esta teoría", y la frase del apunte que contiene un "se entiende
+ * por" casi nunca es la definición del término que uno buscaba.
  */
 export function Vocabulario() {
   const { params } = useUbicacion()
@@ -38,11 +34,11 @@ export function Vocabulario() {
 
   const [fuenteId, setFuenteId] = useState<string | null>(params.get('fuente'))
   const [indice, setIndice] = useState<number>(Number(params.get('tema') ?? -1))
-  const [paso, setPaso] = useState<Paso>(params.get('tema') ? 'triaje' : 'elegir')
-  const [marcas, setMarcas] = useState<Record<string, Marca>>({})
-  const [respuestas, setRespuestas] = useState<Record<string, string>>({})
-  const [definiciones, setDefiniciones] = useState<Record<string, Definicion>>({})
+  const [paso, setPaso] = useState<Paso>(params.get('tema') ? 'traer' : 'elegir')
+  const [parte, setParte] = useState(0)
   const [pegado, setPegado] = useState('')
+  const [traidos, setTraidos] = useState<DatosConcepto[]>([])
+  const [marcas, setMarcas] = useState<Record<string, Marca>>({})
   const [aviso, setAviso] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -50,6 +46,9 @@ export function Vocabulario() {
   const secciones = fuente ? mapaDe(fuente) : []
   const seccion: SeccionApunte | null = fuente && indice >= 0 ? secciones[indice] ?? null : null
   const texto = fuente && seccion ? textoDeSeccion(fuente.texto, seccion) : ''
+  // Un tema entero cabe en un pedido: partirlo obliga a copiar dos veces y
+  // encima Claude pierde de vista los pares contrapuestos del tema.
+  const trozos = useMemo(() => (texto ? partirTexto(texto, LARGO_VOCABULARIO) : []), [texto])
 
   // Los que ya están guardados no se vuelven a preguntar.
   const yaGuardados = useMemo(
@@ -58,50 +57,19 @@ export function Vocabulario() {
     [items],
   )
 
-  const terminos = useMemo(() => {
-    if (!texto) return []
-    return conceptosDeTexto(texto)
-      .map((c) => c.termino)
-      .filter((t) => !yaGuardados.has(normalizar(t)))
-      .slice(0, TOPE_TERMINOS)
-  }, [texto, yaGuardados])
-
   const marcados = Object.keys(marcas).length
-  const sabidos = terminos.filter((t) => marcas[t] === 'se')
-  const desconocidos = terminos.filter((t) => marcas[t] === 'no' || marcas[t] === 'masOMenos')
-  const aVerificar = sabidos.slice(0, CUANTAS_VERIFICAR)
-
-  /** Todo lo que hay que definir: lo que no sabía más lo que creyó saber y falló. */
-  const porDefinir = useMemo(() => {
-    const fallados = aVerificar.filter((t) => respuestas[t] === '__falle__')
-    return [...new Set([...desconocidos, ...fallados])]
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marcas, respuestas, terminos])
+  const porEstudiar = traidos.filter((c) => marcas[c.termino] !== 'se')
 
   function empezar(f: string, i: number) {
     setFuenteId(f)
     setIndice(i)
+    setParte(0)
+    setPegado('')
+    setTraidos([])
     setMarcas({})
-    setRespuestas({})
-    setDefiniciones({})
-    setPaso('triaje')
-  }
-
-  function irADefinir() {
-    // Lo que el propio apunte define ya queda resuelto, sin internet.
-    const encontradas: Record<string, Definicion> = {}
-    for (const termino of porDefinir) {
-      const hallazgo = buscarDefinicion(texto, termino)
-      if (hallazgo.definicion) {
-        encontradas[termino] = {
-          definicion: hallazgo.definicion,
-          contexto: hallazgo.contexto ?? undefined,
-          fuente: 'apunte',
-        }
-      }
-    }
-    setDefiniciones(encontradas)
-    setPaso('definir')
+    setError(null)
+    setAviso(null)
+    setPaso('traer')
   }
 
   function leerRespuestaDeClaude() {
@@ -116,8 +84,7 @@ export function Vocabulario() {
       setError('Eso no es JSON válido. Copia el bloque de código completo.')
       return
     }
-    // El bloque y el tema los pone la app, no Claude: son del apunte, no de la
-    // respuesta, y si los pidiéramos en el pedido se equivocaría al escribirlos.
+    // El bloque y el tema los pone la app: son del apunte, no de la respuesta.
     const paquete = bruto as { items?: unknown } | null
     const conOrigen = paquete && Array.isArray(paquete.items)
       ? {
@@ -129,57 +96,64 @@ export function Vocabulario() {
         }
       : bruto
     const validado = validarPaquete(conOrigen)
-    if (validado.items.length === 0) {
+    const conceptos = validado.items
+      .filter((i) => i.tipo === 'concepto')
+      .map((i) => i.datos as DatosConcepto)
+    if (conceptos.length === 0) {
       setError(validado.errores[0]
         ? `${validado.errores[0].donde}: ${validado.errores[0].mensaje}`
-        : 'No vino ningún concepto.')
+        : 'No vino ningún término.')
       return
     }
-    const nuevas = { ...definiciones }
-    let cuantas = 0
-    for (const entrante of validado.items) {
-      if (entrante.tipo !== 'concepto') continue
-      const d = entrante.datos as DatosConcepto
-      const calce = porDefinir.find((t) => normalizar(t) === normalizar(d.termino)) ?? d.termino
-      nuevas[calce] = {
-        definicion: d.definicion,
-        contexto: d.contexto ?? buscarDefinicion(texto, calce).contexto ?? undefined,
-        fuente: d.fuente === 'apunte' ? 'apunte' : 'claude',
-      }
-      cuantas++
+
+    // Sin repetir lo que ya tienes de antes, ni dentro de la misma respuesta.
+    const vistos = new Set(yaGuardados)
+    const nuevos: DatosConcepto[] = []
+    for (const c of conceptos) {
+      const clave = normalizar(c.termino)
+      if (!clave || vistos.has(clave)) continue
+      vistos.add(clave)
+      nuevos.push(c)
     }
-    setDefiniciones(nuevas)
+    if (nuevos.length === 0) {
+      setError('Todos esos términos ya los tenías guardados.')
+      return
+    }
+    setTraidos(nuevos)
+    setMarcas({})
     setPegado('')
-    setAviso(`${cuantas} definiciones traídas.`)
+    setAviso(conceptos.length > nuevos.length
+      ? `${nuevos.length} términos nuevos (${conceptos.length - nuevos.length} ya los tenías).`
+      : null)
+    setPaso('triaje')
   }
 
   async function guardar() {
     if (!curso || !fuente || !seccion) return
     const ahora = Date.now()
-    const nuevos: Item[] = Object.entries(definiciones)
-      .filter(([, d]) => d.definicion.trim().length > 0)
-      .map(([termino, d], orden) => ({
-        id: nuevoId(),
-        cursoId: curso.id,
-        bloque: fuente.bloque,
-        seccion: seccion.titulo,
-        tipo: 'concepto' as const,
-        datos: {
-          termino,
-          definicion: d.definicion.trim(),
-          contexto: d.contexto,
-          fuente: d.fuente,
-        },
-        ref: `${fuente.titulo} · ${seccion.titulo}`,
-        orden,
-        origen: 'manual' as const,
-        creadoEn: ahora,
-        actualizadoEn: ahora,
-      }))
-
-    if (nuevos.length === 0) { setError('No hay ninguna definición que guardar.'); return }
+    const nuevos: Item[] = traidos.map((c, orden) => ({
+      id: nuevoId(),
+      cursoId: curso.id,
+      bloque: fuente.bloque,
+      seccion: seccion.titulo,
+      tipo: 'concepto' as const,
+      datos: c,
+      ref: `${fuente.titulo} · ${presentar(seccion.titulo)}`,
+      orden,
+      origen: 'manual' as const,
+      creadoEn: ahora,
+      actualizadoEn: ahora,
+    }))
     await guardarItems(nuevos)
-    ir(`/estudiar?items=${nuevos.map((n) => n.id).join(',')}`)
+
+    // Se estudian ahora las que no sabías. Las que dijiste saber quedan
+    // guardadas y entran solas a las sesiones: ahí se verá si era cierto.
+    const ahoraMismo = nuevos.filter((n) => marcas[(n.datos as DatosConcepto).termino] !== 'se')
+    if (ahoraMismo.length === 0) {
+      ir('/mapa')
+      return
+    }
+    ir(`/estudiar?items=${ahoraMismo.map((n) => n.id).join(',')}`)
   }
 
   if (!curso || fuentes.length === 0) {
@@ -197,263 +171,176 @@ export function Vocabulario() {
       <div>
         <div className="titulo-seccion"><h1>Vocabulario</h1></div>
         <p className="apunte">
-          Antes de leer un tema, sácate de encima las palabras que no conoces. Marcas cuáles no
-          sabes, la app te da la definición —del apunte si está, y si no se la pedimos a Claude— y
-          después te las pregunta. Leer con diez términos desconocidos no es estudiar.
+          Antes de leer un tema, sácate de encima las palabras que no conoces. Claude saca los
+          términos del tema y qué significa cada uno; tú marcas cuáles ya sabías y la app te
+          pregunta el resto. Leer con diez términos desconocidos no es estudiar.
         </p>
-        {fuentes.map((f) => (
-          <section key={f.id} className="seccion">
-            <div className="titulo-seccion">
-              <h2 style={{ fontSize: '1.02rem' }}>{f.titulo}</h2>
-            </div>
-            <div className="opciones">
-              {mapaDe(f).slice(0, (f.hasta ?? mapaDe(f).length - 1) + 1).map((s, i) => (
-                <button key={i} type="button" className="opcion" onClick={() => empezar(f.id, i)}>
-                  {presentar(s.titulo)}
-                </button>
-              ))}
-            </div>
-          </section>
-        ))}
+        {fuentes.map((f) => <TemasDeUnApunte key={f.id} fuente={f} onElegir={empezar} />)}
       </div>
     )
   }
 
-  // ---------- triaje ----------
-  if (paso === 'triaje') {
+  // ---------- traer el vocabulario ----------
+  if (paso === 'traer') {
     return (
       <div>
         <div className="titulo-seccion">
           <h2>{presentar(seccion.titulo)}</h2>
-          <span className="lado numeral">{marcados} de {terminos.length}</span>
+          <button type="button" className="boton boton-chico" onClick={() => setPaso('elegir')}>
+            Otro tema
+          </button>
         </div>
-        {terminos.length === 0 ? (
-          <div className="vacio">
-            <p>No quedan términos nuevos en este tema.</p>
-            <button type="button" className="boton" onClick={() => setPaso('elegir')}>Elegir otro</button>
-          </div>
-        ) : (
-          <>
-            <p className="apunte">
-              Un toque por término. Sin pensarlo mucho: para las palabras uno sabe bastante bien si
-              las conoce o no.
-            </p>
-            <ul className="lista-limpia">
-              {terminos.map((t) => (
-                <li key={t} className="renglon renglon-acciones">
-                  <div className="crece estudio" style={{ fontSize: '1.05rem' }}>{t}</div>
-                  <div className="botonera">
-                    {([['se', 'La sé'], ['masOMenos', 'Más o menos'], ['no', 'No la sé']] as const).map(
-                      ([valor, texto]) => (
-                        <button
-                          key={valor}
-                          type="button"
-                          className="boton boton-chico"
-                          aria-pressed={marcas[t] === valor}
-                          onClick={() => setMarcas({ ...marcas, [t]: valor })}
-                        >
-                          {texto}
-                        </button>
-                      ),
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="pie-fijo">
-              <button
-                type="button"
-                className="boton boton-fuerte boton-ancho"
-                disabled={marcados < terminos.length}
-                onClick={() => (aVerificar.length > 0 ? setPaso('verificar') : irADefinir())}
-              >
-                Seguir
-              </button>
-              {marcados < terminos.length && (
-                <p className="apunte centrado" style={{ marginTop: '0.4rem' }}>
-                  Te faltan {terminos.length - marcados}.
-                </p>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    )
-  }
 
-  // ---------- verificar las que dijo saber ----------
-  if (paso === 'verificar') {
-    const listo = aVerificar.every((t) => (respuestas[t] ?? '').length > 0)
-    return (
-      <div>
-        <div className="titulo-seccion"><h2>Las que dijiste saber</h2></div>
+        {error && <div className="aviso-error">{error}</div>}
+
         <p className="apunte">
-          Escríbelas en una línea. Es donde más se falla: creer que se sabe una palabra y no poder
-          decirla.
+          Copia el pedido, pégalo en Claude y trae su respuesta. Va el texto de este tema y vuelve
+          con los términos y sus definiciones: una copiada y una pegada, no una por palabra.
         </p>
-        {aVerificar.map((t) => {
-          const hallazgo = buscarDefinicion(texto, t)
-          const escrita = respuestas[t] ?? ''
-          const mostrada = escrita.length > 0 && escrita !== '__falle__'
-          return (
-            <section key={t} className="hoja">
-              <h3>{t}</h3>
-              {!mostrada && escrita !== '__falle__' ? (
-                <>
-                  <textarea
-                    className="serif"
-                    rows={2}
-                    value={respuestas[`borrador-${t}`] ?? ''}
-                    onChange={(e) => setRespuestas({ ...respuestas, [`borrador-${t}`]: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    className="boton boton-chico"
-                    disabled={contarPalabras(respuestas[`borrador-${t}`] ?? '') < 3}
-                    onClick={() => setRespuestas({ ...respuestas, [t]: respuestas[`borrador-${t}`] ?? '' })}
-                  >
-                    Comparar
-                  </button>
-                </>
-              ) : (
-                <>
-                  {escrita !== '__falle__' && (
-                    <p className="apunte">Escribiste: {escrita}</p>
-                  )}
-                  {hallazgo.contexto ? (
-                    <p className="estudio">En el apunte: «{hallazgo.contexto}»</p>
-                  ) : (
-                    <p className="apunte">El apunte no la explica. Compara con lo que sepas.</p>
-                  )}
-                  <div className="botonera">
-                    <button
-                      type="button"
-                      className="boton boton-chico"
-                      aria-pressed={escrita !== '__falle__'}
-                      onClick={() => setRespuestas({ ...respuestas, [t]: respuestas[`borrador-${t}`] ?? 'la sabía' })}
-                    >
-                      La tenía
-                    </button>
-                    <button
-                      type="button"
-                      className="boton boton-chico boton-peligro"
-                      aria-pressed={escrita === '__falle__'}
-                      onClick={() => setRespuestas({ ...respuestas, [t]: '__falle__' })}
-                    >
-                      No la tenía
-                    </button>
-                  </div>
-                </>
-              )}
-            </section>
-          )
-        })}
+
+        {trozos.length > 1 && (
+          <label className="campo">
+            <span>Este tema es largo: va en {trozos.length} partes</span>
+            <select value={parte} onChange={(e) => setParte(Number(e.target.value))}>
+              {trozos.map((t, i) => <option key={i} value={i}>Parte {t.numero} de {t.total}</option>)}
+            </select>
+          </label>
+        )}
+
+        <div className="botonera">
+          <button
+            type="button"
+            className="boton boton-guia"
+            onClick={async () => {
+              const listo = await copiar(armarPedidoVocabulario({
+                curso: ramoDe(curso.nombre, fuente.bloque),
+                tema: presentar(seccion.titulo),
+                trozo: trozos[parte] ?? { numero: 1, total: 1, texto },
+              }))
+              setAviso(listo ? 'Pedido copiado. Pégalo en Claude.' : 'No se pudo copiar solo.')
+            }}
+          >
+            Copiar el pedido para Claude
+          </button>
+        </div>
+
+        {aviso && <p className="apunte" style={{ marginTop: '0.5rem' }}>{aviso}</p>}
+
+        <label className="campo" style={{ marginTop: '1rem' }}>
+          <span>Pega acá la respuesta</span>
+          <textarea rows={5} value={pegado} onChange={(e) => setPegado(e.target.value)} />
+        </label>
+
         <div className="pie-fijo">
-          <button type="button" className="boton boton-fuerte boton-ancho" disabled={!listo} onClick={irADefinir}>
-            Seguir a las definiciones
+          <button
+            type="button"
+            className="boton boton-fuerte boton-ancho"
+            disabled={!pegado.trim()}
+            onClick={leerRespuestaDeClaude}
+          >
+            Traer el vocabulario
           </button>
         </div>
       </div>
     )
   }
 
-  // ---------- definir ----------
-  const sinDefinir = porDefinir.filter((t) => !definiciones[t])
-  const conDefinicion = porDefinir.filter((t) => definiciones[t])
-
+  // ---------- triaje: cuáles ya sabías ----------
   return (
     <div>
       <div className="titulo-seccion">
-        <h2>Definiciones</h2>
-        <span className="lado numeral">{conDefinicion.length} de {porDefinir.length}</span>
+        <h2>{presentar(seccion.titulo)}</h2>
+        <span className="lado numeral">{marcados} de {traidos.length}</span>
       </div>
 
       {aviso && <div className="hoja hoja-bien">{aviso}</div>}
       {error && <div className="aviso-error">{error}</div>}
 
-      {porDefinir.length === 0 ? (
-        <div className="vacio">
-          <p>Sabías todas. No hay nada que guardar.</p>
-          <button type="button" className="boton" onClick={() => setPaso('elegir')}>Otro tema</button>
-        </div>
-      ) : (
-        <>
-          {conDefinicion.length > 0 && (
-            <section className="seccion">
-              <h3>Listas</h3>
-              {conDefinicion.map((t) => (
-                <div key={t} className="hoja">
-                  <strong>{t}</strong>
-                  <span className="etiqueta" style={{ marginLeft: '0.4rem' }}>
-                    {definiciones[t].fuente === 'apunte' ? 'del apunte' : 'de Claude'}
-                  </span>
-                  <textarea
-                    className="serif"
-                    rows={3}
-                    style={{ marginTop: '0.4rem' }}
-                    value={definiciones[t].definicion}
-                    onChange={(e) =>
-                      setDefiniciones({
-                        ...definiciones,
-                        [t]: { ...definiciones[t], definicion: e.target.value, fuente: 'propia' },
-                      })
-                    }
-                  />
-                </div>
-              ))}
-            </section>
-          )}
+      <p className="apunte">
+        Un toque por término, sin pensarlo mucho: para las palabras uno sabe bastante bien si las
+        conoce o no. Las definiciones no se muestran acá a propósito —si las lees primero, vas a
+        creer que las sabías todas.
+      </p>
 
-          {sinDefinir.length > 0 && (
-            <section className="seccion">
-              <div className="titulo-seccion">
-                <h3>Estas no las define el apunte</h3>
-                <span className="lado numeral">{sinDefinir.length}</span>
-              </div>
-              <p className="apunte">
-                Copia el pedido, pégalo en Claude y trae su respuesta. Va una sola vez con todas.
-              </p>
-              <ul className="apunte" style={{ paddingLeft: '1.1rem' }}>
-                {sinDefinir.map((t) => <li key={t}>{t}</li>)}
-              </ul>
-              <div className="botonera">
-                <button
-                  type="button"
-                  className="boton boton-fuerte"
-                  onClick={async () => {
-                    const listo = await copiar(armarPedidoVocabulario({
-                      curso: curso.nombre,
-                      tema: seccion.titulo,
-                      terminos: sinDefinir.map((t) => ({ termino: t, apariciones: aparicionesDe(texto, t) })),
-                    }))
-                    setAviso(listo ? 'Pedido copiado. Pégalo en Claude.' : 'No se pudo copiar solo.')
-                  }}
-                >
-                  Copiar el pedido para Claude
-                </button>
-              </div>
-              <label className="campo" style={{ marginTop: '0.8rem' }}>
-                <span>Pega acá la respuesta</span>
-                <textarea rows={4} value={pegado} onChange={(e) => setPegado(e.target.value)} />
-              </label>
-              <button type="button" className="boton" disabled={!pegado.trim()} onClick={leerRespuestaDeClaude}>
-                Traer las definiciones
-              </button>
-            </section>
-          )}
+      <ul className="lista-limpia">
+        {traidos.map((c) => (
+          <li key={c.termino} className="renglon renglon-acciones">
+            <div className="crece estudio" style={{ fontSize: '1.05rem' }}>{c.termino}</div>
+            <div className="botonera">
+              {([['se', 'La sé'], ['masOMenos', 'Más o menos'], ['no', 'No la sé']] as const).map(
+                ([valor, rotulo]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    className="boton boton-chico"
+                    aria-pressed={marcas[c.termino] === valor}
+                    onClick={() => setMarcas({ ...marcas, [c.termino]: valor })}
+                  >
+                    {rotulo}
+                  </button>
+                ),
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
 
-          <div className="pie-fijo">
-            <button
-              type="button"
-              className="boton boton-fuerte boton-ancho"
-              disabled={conDefinicion.length === 0}
-              onClick={guardar}
-            >
-              Guardar {conDefinicion.length} y estudiarlas
-            </button>
-          </div>
-        </>
-      )}
+      <div className="pie-fijo">
+        <button
+          type="button"
+          className="boton boton-fuerte boton-ancho"
+          disabled={marcados < traidos.length}
+          onClick={guardar}
+        >
+          {marcados < traidos.length
+            ? `Te faltan ${traidos.length - marcados}`
+            : porEstudiar.length > 0
+              ? `Guardar ${traidos.length} y estudiar ${porEstudiar.length}`
+              : `Guardar ${traidos.length}`}
+        </button>
+        {marcados === traidos.length && porEstudiar.length === 0 && (
+          <p className="apunte centrado" style={{ marginTop: '0.4rem' }}>
+            Las sabías todas. Quedan guardadas y van a aparecer en las sesiones igual.
+          </p>
+        )}
+      </div>
     </div>
+  )
+}
+
+/**
+ * Cómo nombrar el ramo en el pedido. Importa de verdad: "enajenación" no
+ * significa lo mismo en Civil que en Penal, y el nombre del curso suele ser
+ * genérico mientras que el bloque trae la materia.
+ */
+function ramoDe(curso: string, bloque: string): string {
+  const b = bloque.trim()
+  if (!b || normalizar(b) === normalizar(curso)) return curso
+  return `${curso} (${b})`
+}
+
+/** Los temas de un apunte, hasta donde llegó el curso. */
+function TemasDeUnApunte({
+  fuente,
+  onElegir,
+}: {
+  fuente: Fuente
+  onElegir: (fuenteId: string, indice: number) => void
+}) {
+  const secciones = mapaDe(fuente)
+  const tope = Number.isInteger(fuente.hasta) ? fuente.hasta : secciones.length - 1
+  return (
+    <section className="seccion">
+      <div className="titulo-seccion">
+        <h2 style={{ fontSize: '1.02rem' }}>{fuente.titulo}</h2>
+      </div>
+      <div className="opciones">
+        {secciones.slice(0, tope + 1).map((s, i) => (
+          <button key={i} type="button" className="opcion" onClick={() => onElegir(fuente.id, i)}>
+            {presentar(s.titulo)}
+          </button>
+        ))}
+      </div>
+    </section>
   )
 }
