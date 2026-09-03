@@ -1,7 +1,10 @@
 import { useMemo } from 'react'
-import { useCursoActivo, useDatos, useRevisiones } from '../datos/hooks'
-import { estaDominado } from '../logica/plan'
-import { calibracion } from '../logica/prontitud'
+import { useAjustes, useCursoActivo, useDatos, useEvaluaciones, useItems, useRevisiones } from '../datos/hooks'
+import { cargaDeHoy, estaDominado, formatearFecha } from '../logica/plan'
+import { calibracion, prontitudEn } from '../logica/prontitud'
+import { dominioGeneral, dominioPorBloque } from '../logica/dominio'
+import { generarConsejos } from '../logica/consejos'
+import { ListaDominio } from '../componentes/Dominio'
 import { NOMBRE_CONFIANZA } from '../datos/tipos'
 import { NOMBRE_TIPO, type TipoItem } from '../datos/tipos'
 
@@ -9,8 +12,26 @@ const DIA = 24 * 60 * 60 * 1000
 
 export function Estadisticas() {
   const curso = useCursoActivo()
+  const ajustes = useAjustes()
   const datos = useDatos(curso?.id)
+  const items = useItems(curso?.id)
   const revisiones = useRevisiones(curso?.id, 2000)
+  const evaluaciones = useEvaluaciones(curso?.id)
+
+  // Lo que antes llenaba la pantalla de inicio: acá se mira cuando uno quiere
+  // mirarlo, no cada vez que abre la app para estudiar cinco minutos.
+  const bloques = useMemo(() => dominioPorBloque(datos), [datos])
+  const general = useMemo(() => dominioGeneral(datos), [datos])
+  const plan = useMemo(() => cargaDeHoy(evaluaciones, datos), [evaluaciones, datos])
+  const proxima = plan.estados[0]
+  const prontitud = useMemo(
+    () => (proxima ? prontitudEn(datos, proxima.evaluacion.fecha, proxima.evaluacion.bloques) : null),
+    [datos, proxima],
+  )
+  const consejos = useMemo(
+    () => generarConsejos({ datos, items, revisiones, estados: plan.estados, ajustes }),
+    [datos, items, revisiones, plan.estados, ajustes],
+  )
 
   const resumen = useMemo(() => {
     const dominados = datos.filter((d) => estaDominado(d.progreso)).length
@@ -66,7 +87,120 @@ export function Estadisticas() {
 
   return (
     <div>
-      <div className="titulo-seccion"><h1>Avance</h1></div>
+      <div className="titulo-seccion"><h1>Cómo voy</h1></div>
+
+      <section className="seccion">
+        <div className="titulo-seccion">
+          <h2>Cuánto dominas</h2>
+          <span className="lado numeral">{general.porcentaje}%</span>
+        </div>
+        {bloques.length === 0 ? (
+          <p className="apunte">Todavía no hay materias con avance.</p>
+        ) : (
+          <ListaDominio bloques={bloques} />
+        )}
+        <p className="apunte" style={{ marginTop: '0.6rem' }}>
+          El porcentaje no cuenta lo que viste, sino cuánto aguanta cada cosa antes de que se te
+          olvide. Un ítem recién visto casi no suma.
+        </p>
+      </section>
+
+      {proxima && prontitud && prontitud.enJuego > 0 && (
+        <>
+          <hr className="filete" />
+          <section className="seccion">
+            <div className="titulo-seccion">
+              <h2>Si la prueba fuera hoy</h2>
+              <span className="lado">{proxima.evaluacion.nombre}</span>
+            </div>
+            <div className="marcador" style={{ paddingTop: '0.5rem' }}>
+              <div className="marcador-cifra numeral">{prontitud.esperado}%</div>
+              <div className="apunte">
+                de la materia que entra la recordarías el día de la prueba
+              </div>
+            </div>
+            <p className="apunte">
+              No es cuántas fichas viste: es la probabilidad de acordarte de cada cosa ese día,
+              calculada con la curva de olvido.
+              {prontitud.sinVer > 0 && ` Hay ${prontitud.sinVer} ítems que nunca has estudiado y cuentan como cero.`}
+            </p>
+            {prontitud.porBloque.length > 1 && (
+              <div className="dominio">
+                {prontitud.porBloque.slice(0, 5).map((b) => (
+                  <div key={b.bloque} className="dominio-fila">
+                    <div className="crece">{b.bloque}</div>
+                    <span className="barra" aria-hidden="true">
+                      <span style={{ width: `${Math.max(2, b.esperado)}%` }} />
+                    </span>
+                    <span className="porcentaje">{b.esperado}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {prontitud.enPeligro.length > 0 && (
+              <p style={{ marginTop: '0.75rem' }}>
+                <a className="boton boton-chico" href={`#/estudiar?items=${prontitud.enPeligro.slice(0, 40).map((d) => d.item.id).join(',')}`}>
+                  Reforzar los {Math.min(40, prontitud.enPeligro.length)} que se van a caer
+                </a>
+              </p>
+            )}
+          </section>
+        </>
+      )}
+
+      {plan.estados.length > 0 && (
+        <>
+          <hr className="filete" />
+          <section className="seccion">
+            <div className="titulo-seccion">
+              <h2>Pruebas</h2>
+              <a className="lado" href="#/pruebas">editar</a>
+            </div>
+            <ul className="lista-limpia">
+              {plan.estados.map((e) => (
+                <li key={e.evaluacion.id} className="renglon">
+                  <div className="crece">
+                    <strong>{e.evaluacion.nombre}</strong>
+                    <div className="apunte">{formatearFecha(e.evaluacion.fecha)}</div>
+                    <div className="apunte">
+                      {e.pendientes} por dominar · {e.porDia} al día para llegar
+                    </div>
+                  </div>
+                  <div className="centrado">
+                    <div className="cifra">{Math.max(0, e.diasRestantes)}</div>
+                    <div className="apunte">días</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      )}
+
+      {ajustes.mostrarConsejos && (
+        <>
+          <hr className="filete" />
+          <section className="seccion">
+            <div className="titulo-seccion">
+              <h2>Qué conviene hacer</h2>
+            </div>
+            {consejos.map((c) => (
+              <div key={c.id} className={`hoja hoja-${c.tono}`}>
+                <strong>{c.titulo}</strong>
+                <p style={{ margin: '0.35rem 0 0' }}>{c.texto}</p>
+                {c.accion && (
+                  <p style={{ margin: '0.5rem 0 0' }}>
+                    <a className="boton boton-chico" href={c.accion.ruta}>{c.accion.etiqueta}</a>
+                  </p>
+                )}
+              </div>
+            ))}
+          </section>
+        </>
+      )}
+
+      <hr className="filete" />
+
 
       <div className="cifras seccion">
         <div><span className="cifra">{resumen.dominados}</span><span>dominados</span></div>

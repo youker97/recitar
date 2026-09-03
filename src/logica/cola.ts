@@ -111,3 +111,39 @@ export function contarPendientes(datos: ItemConProgreso[], ahora = Date.now()) {
   }
   return { vencidos, nuevos, errores, graves, total: datos.length }
 }
+
+export interface Mazo {
+  bloque: string
+  vencidos: number
+  nuevos: number
+  errores: number
+  /** Cuántos se pueden estudiar ahora mismo. */
+  pendientes: number
+  total: number
+}
+
+/**
+ * Los "mazos" de la pantalla de estudio: una fila por materia, con cuántos
+ * tocan hoy. Es la forma que usan Anki y las apps de fichas, y funciona porque
+ * la pantalla principal se contesta de un vistazo: qué hay, cuánto, y toco.
+ *
+ * Las repreguntas no se cuentan: salen encadenadas detrás de su padre, no
+ * sueltas, así que sumarlas daría un número que nunca se alcanza.
+ */
+export function mazosPorBloque(datos: ItemConProgreso[], ahora = Date.now()): Mazo[] {
+  const mapa = new Map<string, Mazo>()
+  for (const { item, progreso } of datos) {
+    if (item.suspendido || item.padreId) continue
+    const bloque = item.bloque || 'Sin materia'
+    const m = mapa.get(bloque) ?? { bloque, vencidos: 0, nuevos: 0, errores: 0, pendientes: 0, total: 0 }
+    m.total++
+    if (progreso.enErrores) m.errores++
+    if (progreso.totalRepasos === 0) m.nuevos++
+    else if (progreso.vence <= ahora) m.vencidos++
+    mapa.set(bloque, m)
+  }
+  for (const m of mapa.values()) m.pendientes = m.vencidos + m.nuevos
+  return [...mapa.values()].sort(
+    (a, b) => b.pendientes - a.pendientes || a.bloque.localeCompare(b.bloque, 'es'),
+  )
+}

@@ -80,8 +80,13 @@ export function Mapa() {
   return (
     <div>
       <div className="titulo-seccion">
-        <h1>Mapa de la materia</h1>
+        <h1>Mis apuntes</h1>
         <span className="lado numeral">{fuentes.length} apuntes</span>
+      </div>
+
+      <div className="botonera" style={{ marginBottom: '0.9rem' }}>
+        <a className="boton boton-fuerte" href="#/importar">Meter apuntes</a>
+        <a className="boton" href="#/material">Ver las preguntas</a>
       </div>
 
       <p className="apunte">

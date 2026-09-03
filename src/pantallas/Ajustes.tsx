@@ -39,6 +39,30 @@ export function Ajustes() {
       {error && <div className="aviso-error">{error}</div>}
 
       <section className="seccion">
+        <h2>Ir a</h2>
+        <div className="acciones">
+          <a className="accion" href="#/pruebas">
+            <strong>Fechas de prueba</strong>
+            <span>Con la fecha, la app reparte la carga en vez de dejártela toda para el final.</span>
+          </a>
+          <a className="accion" href="#/errores">
+            <strong>Registro de errores</strong>
+            <span>Todo lo que has fallado, con cuántas veces y cuáles fueron graves.</span>
+          </a>
+          <a className="accion" href="#/material">
+            <strong>Material</strong>
+            <span>Los apuntes y las preguntas de este curso, una por una.</span>
+          </a>
+          <a className="accion" href="#/importar">
+            <strong>Importar</strong>
+            <span>Meter apuntes, PDF o preguntas nuevas.</span>
+          </a>
+        </div>
+      </section>
+
+      <hr className="filete" />
+
+      <section className="seccion">
         <h2>Estudio</h2>
 
         <label className="marca-check" style={{ padding: '0.5rem 0' }}>

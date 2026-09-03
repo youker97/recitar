@@ -19,13 +19,19 @@ import { Sesion } from './modos/Sesion'
 import { Escudo } from './componentes/Identidad'
 import { SelectorCurso } from './componentes/SelectorCurso'
 
+/**
+ * Cuatro pestañas, no siete.
+ *
+ * Las apps de estudio que funcionan tienen una pantalla principal y todo lo
+ * demás detrás: Anki abre en la lista de mazos, LegalQuiz en la biblioteca de
+ * fichas y las materias se administran desde Ajustes. Acá había siete
+ * pestañas del mismo peso —dos de ellas fuera de pantalla— y tres con nombres
+ * parecidos: Mapa, Material e Importar.
+ */
 const NAVEGACION = [
-  { ruta: '/', texto: 'Hoy' },
-  { ruta: '/errores', texto: 'Errores' },
-  { ruta: '/mapa', texto: 'Mapa' },
-  { ruta: '/material', texto: 'Material' },
-  { ruta: '/importar', texto: 'Importar' },
-  { ruta: '/pruebas', texto: 'Pruebas' },
+  { ruta: '/', texto: 'Estudiar' },
+  { ruta: '/mapa', texto: 'Mis apuntes' },
+  { ruta: '/estadisticas', texto: 'Cómo voy' },
   { ruta: '/ajustes', texto: 'Ajustes' },
 ]
 

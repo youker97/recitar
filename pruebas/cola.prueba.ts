@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { armarCola, contarPendientes, intercalar, type ItemConProgreso } from '../src/logica/cola'
+import { armarCola, contarPendientes, intercalar, mazosPorBloque, type ItemConProgreso } from '../src/logica/cola'
 import { progresoNuevo } from '../src/logica/programador'
 import type { Item, TipoItem } from '../src/datos/tipos'
 
@@ -79,5 +79,37 @@ describe('cola de la sesión', () => {
     ]
     const cuentas = contarPendientes(datos, AHORA)
     expect(cuentas).toMatchObject({ nuevos: 1, vencidos: 2, errores: 1, graves: 1, total: 3 })
+  })
+})
+
+describe('los mazos de la pantalla de estudio', () => {
+  const dia = 86400000
+  const datos: ItemConProgreso[] = [
+    con(crear('1', 'Penal', 'vf'), { totalRepasos: 0 }),
+    con(crear('2', 'Penal', 'vf'), { totalRepasos: 3, vence: AHORA - dia }),
+    con(crear('3', 'Penal', 'vf'), { totalRepasos: 3, vence: AHORA + 5 * dia }),
+    con(crear('4', 'Civil', 'vf'), { totalRepasos: 2, vence: AHORA - dia, enErrores: true }),
+    con(crear('5', 'Civil', 'vf'), { totalRepasos: 4, vence: AHORA + dia }),
+  ]
+
+  it('agrupa por materia y cuenta lo que toca ahora', () => {
+    const mazos = mazosPorBloque(datos, AHORA)
+    expect(mazos.map((m) => m.bloque)).toEqual(['Penal', 'Civil'])
+    expect(mazos[0]).toMatchObject({ bloque: 'Penal', nuevos: 1, vencidos: 1, pendientes: 2, total: 3 })
+    expect(mazos[1]).toMatchObject({ bloque: 'Civil', vencidos: 1, errores: 1, pendientes: 1, total: 2 })
+  })
+
+  it('pone adelante la materia con más pendientes', () => {
+    const mazos = mazosPorBloque(datos, AHORA)
+    expect(mazos[0].pendientes).toBeGreaterThanOrEqual(mazos[1].pendientes)
+  })
+
+  it('no cuenta las repreguntas, que salen encadenadas', () => {
+    const conHija = [...datos, con(crear('6', 'Penal', 'repregunta', '2'))]
+    expect(mazosPorBloque(conHija, AHORA)[0].total).toBe(3)
+  })
+
+  it('a un ítem sin materia le pone un nombre igual, para que no desaparezca', () => {
+    expect(mazosPorBloque([con(crear('7', '', 'vf'))], AHORA)[0].bloque).toBe('Sin materia')
   })
 })
