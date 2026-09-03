@@ -24,7 +24,20 @@ y qué campo está mal.
 | `ref` | no, pero conviene | de dónde sale: "art. 1489 CC", "apunte cl. 7" |
 | `hijos` | no | lista de repreguntas encadenadas (pueden tener sus propios `hijos`) |
 
-## Los siete tipos
+## Los ocho tipos
+
+```json
+{"tipo":"concepto","bloque":"Penal","seccion":"Antijuridicidad","ref":"apunte cl. 5",
+ "termino":"enajenación",
+ "definicion":"Todo acto de disposición entre vivos por el que el titular transfiere su derecho o constituye sobre él un derecho real limitativo.",
+ "contexto":"En sentido amplio se entiende por enajenación todo acto de disposición…",
+ "fuente":"apunte"}
+```
+Vocabulario: la palabra sola, para las que el apunte da por sabidas. `contexto` es la frase del
+apunte donde aparece, y sirve para preguntarla también con la palabra tapada. `fuente` dice de
+dónde salió la definición —`"apunte"`, `"claude"` o `"propia"`— porque una definición deducida hay
+que contrastarla con el profesor. Es el tipo que produce la pantalla **Vocabulario**.
+
 
 ```json
 {"tipo":"vf","bloque":"Obligaciones","ref":"art. 1489 CC",

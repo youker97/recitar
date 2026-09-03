@@ -1,6 +1,7 @@
 // Modelo de datos de Recitar. Todo en español, sin abreviaturas raras.
 
 export type TipoItem =
+  | 'concepto'
   | 'vf'
   | 'alternativas'
   | 'lista'
@@ -11,10 +12,11 @@ export type TipoItem =
   | 'repregunta'
 
 export const TIPOS_ITEM: TipoItem[] = [
-  'vf', 'alternativas', 'lista', 'articulo', 'textoLegal', 'triaje', 'desarrollo', 'repregunta',
+  'concepto', 'vf', 'alternativas', 'lista', 'articulo', 'textoLegal', 'triaje', 'desarrollo', 'repregunta',
 ]
 
 export const NOMBRE_TIPO: Record<TipoItem, string> = {
+  concepto: 'Concepto',
   vf: 'Verdadero o falso',
   alternativas: 'Alternativas',
   lista: 'Lista contada',
@@ -32,6 +34,17 @@ export const NOMBRE_VERBO: Record<Verbo, string> = {
   posturas: 'Exponer posturas',
   importancia: 'Explicar importancia',
   distinciones: 'Hacer distinciones',
+}
+
+/** De dónde salió la definición: importa, porque una mala es peor que ninguna. */
+export type FuenteDefinicion = 'apunte' | 'claude' | 'propia'
+
+export interface DatosConcepto {
+  termino: string
+  definicion: string
+  /** La frase del apunte donde aparece: se estudia en contexto, no suelto. */
+  contexto?: string
+  fuente?: FuenteDefinicion
 }
 
 export interface DatosVF {
@@ -102,7 +115,7 @@ export interface DatosRepregunta {
 }
 
 export type DatosItem =
-  | DatosVF | DatosAlternativas | DatosLista | DatosArticulo | DatosTextoLegal
+  | DatosConcepto | DatosVF | DatosAlternativas | DatosLista | DatosArticulo | DatosTextoLegal
   | DatosTriaje | DatosDesarrollo | DatosRepregunta
 
 export type OrigenItem = 'manual' | 'json' | 'md' | 'txt' | 'pdf' | 'ejemplo'
@@ -175,7 +188,7 @@ export const NOMBRE_NOTA: Record<Nota, string> = {
 }
 
 export type ModoEstudio =
-  | 'vf' | 'alternativas' | 'lista' | 'articuloNumeroMateria' | 'articuloMateriaNumero'
+  | 'concepto' | 'vf' | 'alternativas' | 'lista' | 'articuloNumeroMateria' | 'articuloMateriaNumero'
   | 'textoLegal' | 'triaje' | 'desarrolloPapel' | 'desarrolloTecleado' | 'oral'
 
 export interface Revision {

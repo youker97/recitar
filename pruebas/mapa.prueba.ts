@@ -37,6 +37,16 @@ function dato(id: string, seccion?: string, cambios = {}): ItemConProgreso {
   return { item: i, progreso: { ...progresoNuevo(i), ...cambios } }
 }
 
+/** Una palabra ya trabajada en un tema: lo que hace que la pasada quede libre. */
+function palabra(id: string, seccion: string): ItemConProgreso {
+  const i: Item = {
+    ...item(id, seccion),
+    tipo: 'concepto',
+    datos: { termino: id, definicion: 'algo' },
+  }
+  return { item: i, progreso: progresoNuevo(i) }
+}
+
 function fuente(secciones: ReturnType<typeof detectarSecciones>, hasta: number): Fuente {
   return {
     id: 'f1', cursoId: 'c', bloque: 'Antijuridicidad', titulo: 'Apunte de penal',
@@ -152,8 +162,19 @@ describe('la próxima jugada', () => {
   const secciones = detectarSecciones(APUNTE)
   const base = { volcados: [], ajustes: AJUSTES_POR_DEFECTO, ahora: Date.now() }
 
-  it('manda a dar la primera pasada de lo que falta', () => {
+  it('antes de la pasada manda a ver las palabras del tema', () => {
     const j = proximaJugada({ ...base, datos: [], fuentes: [fuente(secciones, 1)] })
+    expect(j.titulo).toContain('La antijuridicidad')
+    expect(j.ruta).toContain('/vocabulario')
+    expect(j.ruta).toContain('tema=0')
+  })
+
+  it('con el vocabulario hecho, manda a dar la primera pasada', () => {
+    const j = proximaJugada({
+      ...base,
+      datos: [palabra('antijuridicidad', 'La antijuridicidad')],
+      fuentes: [fuente(secciones, 1)],
+    })
     expect(j.titulo).toContain('La antijuridicidad')
     expect(j.ruta).toContain('/pasada')
   })

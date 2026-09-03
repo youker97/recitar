@@ -85,6 +85,15 @@ const HUECAS = new Set([
   'realiza', 'produce', 'ocurre', 'segundo', 'primero', 'ultimo', 'siguiente',
   'general', 'mismo', 'misma', 'propio', 'propia', 'toda', 'todo', 'cada',
   'entre', 'sobre', 'hacia', 'desde', 'durante', 'mediante', 'segun', 'contra',
+  // Verbos con que el apunte hila la explicación: no nombran nada.
+  'distingue', 'distinguen', 'reconoce', 'reconocen', 'sostiene', 'sostienen',
+  'afirma', 'afirman', 'considera', 'consideran', 'entiende', 'entienden',
+  'llama', 'llaman', 'denomina', 'denominan', 'siguiendo', 'tratandose',
+  'senala', 'senalan', 'agrega', 'agregan', 'admite', 'admiten', 'basta',
+  // Conectores y demostrativos.
+  'estos', 'estas', 'esos', 'esas', 'aquellos', 'aquellas', 'dicha', 'dicho',
+  'ademas', 'tambien', 'solo', 'siempre', 'nunca', 'cuando', 'donde', 'porque',
+  'mientras', 'aunque', 'sino', 'pero', 'tres', 'cuatro', 'cinco',
 ])
 
 interface Palabra {
@@ -106,10 +115,39 @@ function palabrasDe(texto: string): Palabra[] {
       clave,
       inicio: m.index,
       fin: m.index + m[0].length,
-      contenido: clave.length >= 4 && !HUECAS.has(clave) && !/^\d+$/.test(clave),
+      // Los adverbios en -mente son todos de relleno: no hace falta listarlos.
+      contenido: clave.length >= 4 && !HUECAS.has(clave) && !/^\d+$/.test(clave)
+        && !(clave.length >= 7 && clave.endsWith('mente')),
     })
   }
   return salida
+}
+
+/**
+ * Un término sacado del texto se muestra como se lee, no como venía: sin la
+ * numeración del título y sin los TÍTULOS EN MAYÚSCULAS, que gritan.
+ */
+export function presentar(termino: string): string {
+  const sinNumeracion = termino
+    .replace(/^\s*(?:\d{1,2}(?:\.\d{1,2})*|[IVXLCDM]{1,7}|[a-zA-Z])\s*[.)\-–]{1,3}\s*/, '')
+    .replace(/[.:;,]$/, '')
+    .trim()
+  if (!sinNumeracion) return termino.trim()
+  const letras = sinNumeracion.replace(/[^\p{L}]/gu, '')
+  const grita = letras.length > 3 && letras === letras.toUpperCase()
+  if (!grita) return sinNumeracion
+  return sinNumeracion[0].toUpperCase() + sinNumeracion.slice(1).toLowerCase()
+}
+
+/**
+ * "Elementos negativos" y "negativos del tipo" son pedazos de "elementos
+ * negativos del tipo": preguntarlos por separado no es vocabulario, es ruido.
+ * Se queda el más largo.
+ */
+function sinSolapados(conceptos: Concepto[]): Concepto[] {
+  const claves = conceptos.map((c) => normalizar(c.termino))
+  return conceptos.filter((_, i) =>
+    !claves.some((otra, j) => j !== i && otra.length > claves[i].length && otra.includes(claves[i])))
 }
 
 /**
@@ -126,27 +164,25 @@ export function conceptosDeTexto(texto: string, bloque = '', ref = ''): Concepto
   const vistos = new Set<string>()
 
   const agregar = (termino: string) => {
-    const clave = normalizar(termino)
+    const limpio = presentar(termino)
+    const clave = normalizar(limpio)
     if (!clave || clave.length < 6 || vistos.has(clave)) return
     vistos.add(clave)
-    salida.push({ termino, itemId: '', ref, bloque })
+    salida.push({ termino: limpio, itemId: '', ref, bloque })
   }
 
   // 1. Los títulos de los temas, sin su numeración.
   for (const seccion of detectarSecciones(texto)) {
-    const limpio = seccion.titulo
-      .replace(/^\s*(?:\d{1,2}(?:\.\d{1,2})*|[IVXLCDM]{1,7}|[a-zA-Z])\s*[.)\-–]+\s*/, '')
-      .replace(/[.:]$/, '')
-      .trim()
+    const limpio = presentar(seccion.titulo)
     if (limpio.split(/\s+/).length <= 8 && /\p{L}/u.test(limpio)) agregar(limpio)
   }
 
   // 2. Las frases de dos y tres palabras que se repiten.
   const palabras = palabrasDe(texto)
-  const cuenta = new Map<string, { forma: string; veces: number }>()
+  const cuenta = new Map<string, { forma: string; veces: number; palabras: number }>()
   for (let i = 0; i < palabras.length; i++) {
     if (!palabras[i].contenido) continue
-    for (const largo of [2, 3]) {
+    for (const largo of [2, 3, 4]) {
       const fin = i + largo - 1
       if (fin >= palabras.length) continue
       if (!palabras[fin].contenido) continue
@@ -154,24 +190,27 @@ export function conceptosDeTexto(texto: string, bloque = '', ref = ''): Concepto
       const huecas = palabras.slice(i, fin + 1).filter((p) => !p.contenido).length
       if (huecas > 1) continue
       const forma = texto.slice(palabras[i].inicio, palabras[fin].fin)
-      if (/[\n.;:!?]/.test(forma)) continue
+      // Una coma o un paréntesis significan que se cruzó de una idea a otra.
+      if (/[\n.;:!?,()«»"]/.test(forma)) continue
       const clave = normalizar(forma)
       if (clave.length < 10) continue
       const previo = cuenta.get(clave)
       if (previo) previo.veces++
-      else cuenta.set(clave, { forma, veces: 1 })
+      else cuenta.set(clave, { forma, veces: 1, palabras: largo })
     }
   }
 
   const minimo = texto.length > 20000 ? 4 : texto.length > 6000 ? 3 : 2
   const frecuentes = [...cuenta.values()]
-    .filter((x) => x.veces >= minimo)
+    // Una frase de cuatro palabras solo es una institución si vuelve de verdad;
+    // si no, es un pedazo de oración que se repitió de casualidad.
+    .filter((x) => x.veces >= (x.palabras >= 4 ? minimo + 1 : minimo))
     .sort((a, b) => b.veces - a.veces || b.forma.length - a.forma.length)
     .slice(0, 40)
 
   for (const f of frecuentes) agregar(f.forma)
 
-  return salida.slice(0, 45)
+  return sinSolapados(salida).slice(0, 45)
 }
 
 export interface ResultadoVolcado {

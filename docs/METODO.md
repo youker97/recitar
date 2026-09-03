@@ -27,7 +27,36 @@ comparando lo parecido se aprende a separarlo.
 **En la app:** FSRS (o Leitner) para los intervalos, y la cola de cada sesión
 evita dos ítems seguidos del mismo bloque y del mismo tipo si puede.
 
-## 3. Equivocarse antes de leer
+## 3. Las palabras antes del texto
+
+Un texto no se entiende por partes: si no conoces un porcentaje alto de las
+palabras que corren en él, la comprensión se cae entera, no proporcionalmente.
+La cifra que se cita —98% de las palabras conocidas— viene de un estudio chico y
+las réplicas posteriores no la confirmaron tal cual, así que el número exacto
+está en discusión; lo que no está en discusión es la dirección: los términos
+desconocidos son el cuello de botella, no un detalle.
+
+Y enseñar las palabras **antes** de leer funciona mejor que dejar que se
+deduzcan del contexto. En un meta-análisis de 37 estudios, la instrucción de
+vocabulario mejoró la comprensión del pasaje (d = 0,50 en medidas hechas a la
+medida del contenido), y el efecto fue tres veces mayor en los lectores que
+partían con más dificultad (d = 1,23 contra 0,39).
+
+Un apunte de Derecho es exactamente ese caso: está escrito para alguien que ya
+maneja el vocabulario del ramo. "Enajenación", "antijuridicidad", "imputación
+objetiva" no se explican, se usan.
+
+**En la app:** la pantalla **Vocabulario**, antes de la primera pasada de cada
+tema. Saca los términos que se repiten en el tema y te los pasa uno por uno —*la
+sé / más o menos / no la sé*—, y de las que dijiste saber te hace escribir tres,
+porque decir "esa la sé" es gratis (es el punto 6 aplicado a las palabras). Las
+que el propio apunte define se resuelven sin internet; las que da por sabidas
+van juntas en un solo pedido a Claude, con las frases donde aparecen, y vuelven
+marcadas con su origen para saber cuáles contrastar con el profesor. Después se
+estudian como cualquier otro ítem: en los dos sentidos y con la frase del apunte
+con la palabra tapada.
+
+## 4. Equivocarse antes de leer
 
 **Pretesting**: intentar responder algo que todavía no sabes, equivocarte, y
 recién ahí leer el texto. Suena absurdo y funciona: en cinco experimentos con
@@ -39,7 +68,7 @@ texto que viene.
 predices o contestas sin saber, después lees, después cierras el texto y
 escribes lo que quedó.
 
-## 4. La hoja en blanco
+## 5. La hoja en blanco
 
 El **volcado** (free recall) es la forma más pura de recuperación: sin pregunta
 que te dé la mitad de la respuesta. Además de fijar el contenido, mejora cómo lo
@@ -49,7 +78,7 @@ tienes organizado en la cabeza, que es justo lo que se nota en un oral.
 queda, y la app compara contra los conceptos que ese bloque debería haberte
 dejado: te dice cuántos produjiste y cuáles no aparecieron nunca.
 
-## 5. Saber si sabes
+## 6. Saber si sabes
 
 Los estudiantes se sobreestiman, y los que peor rinden son los que más. Lo que
 corrige eso no es estudiar más: es **recibir retroalimentación sobre tus propios
@@ -61,7 +90,7 @@ juicios mejoraron el rendimiento y bajaron el exceso de confianza.
 en Avance hay una tabla de calibración: cuando dices "seguro", cuántas veces
 aciertas de verdad.
 
-## 6. Aplicar, no solo recitar
+## 7. Aplicar, no solo recitar
 
 En Derecho la prueba no pregunta qué dice el artículo: da hechos y hay que ver
 qué se activa. Identificar el problema (*issue spotting*) es una habilidad
@@ -72,7 +101,7 @@ releer.
 responderla) y los **desarrollos** con pauta. Es la parte más débil todavía: ver
 "Lo que falta".
 
-## 7. Un número honesto
+## 8. Un número honesto
 
 **En la app:** la pantalla de inicio calcula, con la curva de olvido de FSRS,
 qué probabilidad tienes de acordarte de cada ítem el día de tu prueba, y
@@ -83,7 +112,7 @@ La fórmula es la de FSRS: `R(t,S) = (1 + F·t/(9S))^C`, con `F = 19/81` y
 `C = -0.5`, donde `S` es la estabilidad del recuerdo en días y `t` los días
 transcurridos desde el último repaso.
 
-## 8. Una sola próxima jugada, que a veces es frenar
+## 9. Una sola próxima jugada, que a veces es frenar
 
 Abrir un apunte de noventa páginas y decidir por dónde empezar es donde se
 muere la mayoría de las sesiones. La app corta esa decisión: muestra **una**
@@ -107,7 +136,7 @@ Dos cosas que la evidencia respalda y que todavía no están:
   Es la aplicación directa del contraste discriminativo del punto 2.
 - **Casos.** Un tipo de ítem con hechos, donde primero se marcan los problemas
   que se activan, después las normas y después la solución, con pauta por etapa.
-  Es lo que entrena el punto 6.
+  Es lo que entrena el punto 7.
 
 ## Fuentes
 
@@ -121,5 +150,8 @@ Dos cosas que la evidencia respalda y que todavía no están:
 - [Improving metacognitive accuracy: cómo fallar reduce el exceso de confianza](https://www.sciencedirect.com/science/article/abs/pii/S1053810014001469)
 - [The Deconstructed Issue-Spotting Exam (Journal of Legal Education)](https://jle.aals.org/cgi/viewcontent.cgi?article=1616&context=home)
 - [Issue spotting como habilidad entrenable (Aspen Publishing)](https://aspenpublishing.com/blogs/aspen-legal-education-insider/issue-spotting-skills-every-1l-needs-to-build-early)
+- [Unknown vocabulary density and reading comprehension (Hu & Nation, Reading in a Foreign Language)](https://nflrc.hawaii.edu/rfl/item/43)
+- [Replicando a Hu & Nation: el umbral del 98% en discusión (Language Learning)](https://onlinelibrary.wiley.com/doi/10.1111/lang.12622)
+- [The Impact of Vocabulary Instruction on Passage-Level Comprehension: meta-análisis](https://www.tandfonline.com/doi/full/10.1080/19345740802539200)
 - [A technical explanation of FSRS (Expertium)](https://expertium.github.io/Algorithm.html)
 - [ABC of FSRS](https://github.com/open-spaced-repetition/awesome-fsrs/wiki/ABC-of-FSRS)

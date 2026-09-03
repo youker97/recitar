@@ -262,3 +262,62 @@ export function leerCorreccion(bruto: string, cuantosPuntos: number): Correccion
     comentario: typeof o.comentario === 'string' ? o.comentario : undefined,
   }
 }
+
+// ---------------------------------------------------------------------------
+// Vocabulario de un tema: los términos que no conozco, definidos en el sentido
+// que les da este ramo. Va todo en un solo pedido, para no tener que copiar y
+// pegar una vez por palabra.
+// ---------------------------------------------------------------------------
+
+export interface TerminoSinDefinir {
+  termino: string
+  /** Frases del apunte donde aparece, para que la definición sea la de este ramo. */
+  apariciones: string[]
+}
+
+export function armarPedidoVocabulario(o: {
+  curso: string
+  tema: string
+  terminos: TerminoSinDefinir[]
+}): string {
+  const lista = o.terminos
+    .map((t, i) => {
+      const contexto = t.apariciones.length
+        ? t.apariciones.map((a) => `   · "${a}"`).join('\n')
+        : '   · (no aparece explicado en el apunte)'
+      return `${i + 1}. ${t.termino}\n${contexto}`
+    })
+    .join('\n\n')
+
+  return `Estudio Derecho en Chile. Estoy con el tema "${o.tema}" del ramo ${o.curso} y hay términos
+que no tengo claros. Te paso cada uno con las frases del apunte donde aparece.
+
+Necesito, para cada término, una definición en el sentido que le da ESTE ramo y este apunte, no la
+del diccionario. Si el apunte no lo define, dedúcelo del contexto y de la dogmática chilena, y dilo.
+
+${lista}
+
+Devuelve SOLO este JSON, dentro de un bloque de código:
+
+{
+  "recitar": 1,
+  "items": [
+    {
+      "tipo": "concepto",
+      "termino": "el término tal como te lo pasé",
+      "definicion": "dos o tres líneas, en el sentido de este ramo, con el artículo si corresponde",
+      "contexto": "la frase del apunte donde aparece, copiada tal cual",
+      "fuente": "apunte" | "claude",
+      "ref": "de dónde sale: artículo, autor o el tema"
+    }
+  ]
+}
+
+Reglas:
+- "fuente" es "apunte" si la definición está en las frases que te pasé, y "claude" si la tuviste que
+  deducir. Necesito distinguirlas para saber cuáles revisar con mi profesor.
+- Nada de definiciones de diccionario ni de otro país: derecho chileno.
+- Si un término tiene un sentido amplio y uno restringido, dilos los dos en una línea cada uno.
+- Si el término no es un concepto jurídico sino una frase cualquiera del texto, omítelo.
+- No inventes artículos. Si no estás seguro del número, no lo pongas.`
+}

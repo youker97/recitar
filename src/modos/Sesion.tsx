@@ -11,6 +11,7 @@ import { useUbicacion, ir } from '../rutas'
 import { formatearDuracion } from '../componentes/Cronometro'
 import { ModoVF } from './ModoVF'
 import { ModoAlternativas } from './ModoAlternativas'
+import { ModoConcepto } from './ModoConcepto'
 import { ModoLista } from './ModoLista'
 import { ModoArticulo } from './ModoArticulo'
 import { ModoTextoLegal } from './ModoTextoLegal'
@@ -256,11 +257,12 @@ export function Sesion() {
           <>
             <p>Tienes apuntes cargados, pero todavía no hay preguntas que repasar.</p>
             <p className="apunte">
-              Dale la primera pasada a un tema, o pídele a Claude las preguntas de ese tema desde el
-              mapa.
+              Parte por el vocabulario de un tema, dale la primera pasada, o pídele a Claude las
+              preguntas de ese tema desde el mapa.
             </p>
             <div className="botonera-columna">
-              <a className="boton boton-fuerte" href="#/pasada">Primera pasada</a>
+              <a className="boton boton-fuerte" href="#/vocabulario">Vocabulario de un tema</a>
+              <a className="boton" href="#/pasada">Primera pasada</a>
               <a className="boton" href="#/mapa">Ver el mapa</a>
             </div>
           </>
@@ -288,6 +290,7 @@ export function Sesion() {
   const clave = `${actual.id}-${resumen.vistos}`
   let cuerpo
   switch (actual.tipo) {
+    case 'concepto': cuerpo = <ModoConcepto key={clave} {...propsComunes} />; break
     case 'vf': cuerpo = <ModoVF key={clave} {...propsComunes} />; break
     case 'alternativas': cuerpo = <ModoAlternativas key={clave} {...propsComunes} />; break
     case 'lista': cuerpo = <ModoLista key={clave} {...propsComunes} />; break

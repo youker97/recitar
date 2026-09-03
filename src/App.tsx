@@ -14,6 +14,7 @@ import { Ensayo } from './pantallas/Ensayo'
 import { Volcado } from './pantallas/Volcado'
 import { Pasada } from './pantallas/Pasada'
 import { Mapa } from './pantallas/Mapa'
+import { Vocabulario } from './pantallas/Vocabulario'
 import { Sesion } from './modos/Sesion'
 
 const NAVEGACION = [
@@ -48,6 +49,7 @@ export default function App() {
     case '/volcado': pantalla = <Volcado />; break
     case '/pasada': pantalla = <Pasada />; break
     case '/mapa': pantalla = <Mapa />; break
+    case '/vocabulario': pantalla = <Vocabulario />; break
     case '/material': pantalla = <Material />; break
     case '/editor': pantalla = <Editor />; break
     case '/pruebas': pantalla = <Evaluaciones />; break

@@ -47,6 +47,12 @@ export type EstadoItem = 'disponible' | 'sinPasada' | 'fueraDeAlcance'
  */
 export function estadoDeItem(item: Item, alcance: Alcance): EstadoItem {
   if (!item.seccion) return 'disponible'
+  // El vocabulario es el trabajo previo a leer: no espera a la primera pasada.
+  if (item.tipo === 'concepto') {
+    const suya = normalizar(item.seccion)
+    if (!suya || !alcance.conocidas.has(suya)) return 'disponible'
+    return alcance.enAlcance.has(suya) ? 'disponible' : 'fueraDeAlcance'
+  }
   const clave = normalizar(item.seccion)
   if (!clave || !alcance.conocidas.has(clave)) return 'disponible'
   if (!alcance.enAlcance.has(clave)) return 'fueraDeAlcance'
