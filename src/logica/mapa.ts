@@ -196,5 +196,22 @@ export function presentar(termino: string): string {
   const letras = sinNumeracion.replace(/[^\p{L}]/gu, '')
   const grita = letras.length > 3 && letras === letras.toUpperCase()
   if (!grita) return sinNumeracion
-  return sinNumeracion[0].toUpperCase() + sinNumeracion.slice(1).toLowerCase()
+
+  const bajado = sinNumeracion.replace(/\p{L}[\p{L}.]*/gu, (palabra) =>
+    seDejaEnMayusculas(palabra) ? palabra : palabra.toLowerCase())
+  return bajado[0].toUpperCase() + bajado.slice(1)
+}
+
+/**
+ * Al bajar un título GRITADO hay palabras que no se pueden tocar: "BLOQUE I"
+ * quedaba como "Bloque i", y "ART. 19 CPR" como "art. 19 cpr". Se conservan
+ * los números romanos y las siglas (las que no tienen vocales: CC, CP, CPR,
+ * DL). Una palabra corriente, aunque sea corta, sí se baja.
+ */
+function seDejaEnMayusculas(palabra: string): boolean {
+  const limpia = palabra.replace(/[^\p{L}]/gu, '')
+  if (limpia.length === 0) return false
+  if (limpia.length === 1) return true
+  if (/^[IVXLCDM]+$/.test(limpia)) return true
+  return !/[AEIOUÁÉÍÓÚ]/.test(limpia)
 }
