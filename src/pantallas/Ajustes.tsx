@@ -78,6 +78,22 @@ export function Ajustes() {
           </span>
         </label>
 
+        <label className="marca-check" style={{ padding: '0.5rem 0' }}>
+          <input
+            type="checkbox"
+            checked={ajustes.pasadaProfunda}
+            onChange={(e) => guardarAjustes({ pasadaProfunda: e.target.checked })}
+          />
+          <span>
+            <strong>Primera pasada en trozos chicos</strong>
+            <br />
+            <span className="apunte">
+              Por defecto cada paso es un tema completo. Con esto se parte en pedazos de media
+              página: se agarra mejor, pero son muchas más vueltas.
+            </span>
+          </span>
+        </label>
+
         <label className="campo" style={{ marginTop: '1rem' }}>
           <span>Desarrollo, por defecto</span>
           <select

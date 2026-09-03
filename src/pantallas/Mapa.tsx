@@ -137,7 +137,7 @@ export function Mapa() {
                     const dentro = i <= tope
                     const cuantos = porSeccion.get(normalizar(s.titulo)) ?? 0
                     return (
-                      <li key={i} className="renglon">
+                      <li key={i} className="renglon renglon-acciones">
                         <div className="crece">
                           <div className={dentro ? 'estudio' : 'estudio tenue'} style={{ fontSize: '1.02rem' }}>
                             {s.titulo}

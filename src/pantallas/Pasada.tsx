@@ -1,18 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
 import { db } from '../datos/db'
-import { useCursoActivo, useFuentes, useItems } from '../datos/hooks'
+import { useAjustes, useCursoActivo, useFuentes, useItems } from '../datos/hooks'
 import type { Fuente, Item, SeccionApunte } from '../datos/tipos'
 import { partirTexto } from '../importar/claude'
 import { detectarSecciones, textoDeSeccion } from '../logica/mapa'
-import { conceptosDeBloque, revisarVolcado } from '../logica/conceptos'
+import { conceptosDeBloque, conceptosDeTexto, revisarVolcado } from '../logica/conceptos'
 import { contarPalabras } from '../logica/corrector'
 import { contiene, normalizar } from '../logica/comparar'
 import { resumenDeItem } from '../logica/resumen'
+import { TextoApunte } from '../componentes/TextoApunte'
 import { ir, useUbicacion } from '../rutas'
 
 type Etapa = 'predecir' | 'leer' | 'recordar' | 'comparar'
 
-const LARGO_TROZO = 1500
+/**
+ * Un paso es un TEMA completo. Antes era un trozo de 1.500 letras, y un apunte
+ * de verdad daba más de cien pasos: cinco horas de leer tres frases y
+ * reescribirlas. Se parte solo si el tema es enorme.
+ */
+const LARGO_PASO = 9000
+const LARGO_PASO_PROFUNDO = 3000
 
 interface Paso {
   seccion: SeccionApunte
@@ -29,6 +36,7 @@ interface Paso {
 export function Pasada() {
   const { params } = useUbicacion()
   const curso = useCursoActivo()
+  const ajustes = useAjustes()
   const fuentes = useFuentes(curso?.id)
   const items = useItems(curso?.id)
   const [fuenteId, setFuenteId] = useState<string | null>(params.get('fuente'))
@@ -41,25 +49,35 @@ export function Pasada() {
 
   const pasos = useMemo<Paso[]>(() => {
     if (!fuente) return []
+    const largoMaximo = ajustes.pasadaProfunda ? LARGO_PASO_PROFUNDO : LARGO_PASO
     const secciones = mapaDe(fuente)
     const tope = Number.isInteger(fuente.hasta) ? fuente.hasta : secciones.length - 1
     return secciones.slice(0, tope + 1).flatMap((seccion, indiceSeccion) => {
-      const trozos = partirTexto(textoDeSeccion(fuente.texto, seccion), LARGO_TROZO)
-      return trozos.map((t, i) => ({
+      const completo = textoDeSeccion(fuente.texto, seccion)
+      // Un tema entero es un paso; solo se parte si no hay forma de leerlo de
+      // una sentada, y en ese caso en partes parejas.
+      const partes = completo.length <= largoMaximo
+        ? [completo]
+        : partirTexto(completo, Math.ceil(completo.length / Math.ceil(completo.length / largoMaximo)))
+            .map((t) => t.texto)
+      return partes.map((texto, i) => ({
         seccion,
         indiceSeccion,
-        texto: t.texto,
-        ultimoDeLaSeccion: i === trozos.length - 1,
+        texto,
+        ultimoDeLaSeccion: i === partes.length - 1,
       }))
     })
-  }, [fuente])
+  }, [fuente, ajustes.pasadaProfunda])
 
   const actual = pasos[paso]
 
-  const conceptos = useMemo(
-    () => (fuente ? conceptosDeBloque(items.filter((i) => i.bloque === fuente.bloque)) : []),
-    [items, fuente],
-  )
+  const conceptos = useMemo(() => {
+    if (!fuente) return []
+    const delMaterial = conceptosDeBloque(items.filter((i) => i.bloque === fuente.bloque))
+    if (delMaterial.length > 0) return delMaterial
+    // Todavía no hay preguntas: los conceptos salen del propio apunte.
+    return conceptosDeTexto(fuente.texto, fuente.bloque, fuente.titulo)
+  }, [items, fuente])
   const delTrozo = useMemo(
     () => (actual ? conceptos.filter((c) => contiene(actual.texto, c.termino)) : []),
     [conceptos, actual],
@@ -134,12 +152,14 @@ export function Pasada() {
             {fuentes.map((f) => {
               const secciones = mapaDe(f)
               const cubiertas = secciones.filter((s) => s.cubierta).length
+              const horas = Math.round((f.texto.split(/\s+/).length / 200) * 2 / 60 * 10) / 10
               return (
                 <button key={f.id} type="button" className="opcion" onClick={() => setFuenteId(f.id)}>
                   <span>
                     <strong>{f.titulo}</strong>
                     <small>
-                      {f.bloque} · {secciones.length} temas · {cubiertas} con la pasada hecha
+                      {f.bloque} · {secciones.length} temas · {cubiertas} con la pasada hecha ·
+                      {' '}unas {horas} h en total
                     </small>
                   </span>
                 </button>
@@ -163,6 +183,8 @@ export function Pasada() {
     )
   }
 
+  const palabras = actual.texto.trim().split(/\s+/).length
+  const minutosLectura = Math.max(1, Math.round(palabras / 200))
   const resultado = etapa === 'comparar' ? revisarVolcado(recuerdo, delTrozo) : null
 
   return (
@@ -178,6 +200,10 @@ export function Pasada() {
       {etapa === 'predecir' && (
         <>
           <h3>Antes de leer</h3>
+          <p className="apunte">
+            Este tema tiene {palabras.toLocaleString('es-CL')} palabras: unos {minutosLectura} min de
+            lectura y otro tanto de escritura.
+          </p>
           {preguntas.length > 0 ? (
             <>
               <p className="apunte">
@@ -214,8 +240,11 @@ export function Pasada() {
       {etapa === 'leer' && (
         <>
           <h3>Lee</h3>
-          <p className="apunte">Una vez, con calma. Después vas a tener que escribirlo sin mirar.</p>
-          <div className="estudio" style={{ whiteSpace: 'pre-wrap' }}>{actual.texto}</div>
+          <p className="apunte">
+            {palabras.toLocaleString('es-CL')} palabras, unos {minutosLectura} min. Una vez, con
+            calma. Después vas a tener que escribirlo sin mirar.
+          </p>
+          <TextoApunte texto={actual.texto} />
           <div className="pie-fijo">
             <button type="button" className="boton boton-fuerte boton-ancho" onClick={() => setEtapa('recordar')}>
               Listo, cerrar el texto
@@ -282,7 +311,7 @@ export function Pasada() {
 
           <details className="seccion">
             <summary className="apunte">Volver a ver el texto</summary>
-            <div className="estudio" style={{ whiteSpace: 'pre-wrap' }}>{actual.texto}</div>
+            <TextoApunte texto={actual.texto} />
           </details>
 
           <div className="pie-fijo">

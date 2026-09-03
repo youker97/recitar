@@ -20,17 +20,24 @@ export async function extraerTextoPdf(
   for (let n = 1; n <= documento.numPages; n++) {
     const pagina = await documento.getPage(n)
     const contenido = await pagina.getTextContent()
-    let texto = ''
+    const lineas: string[] = []
+    let linea = ''
     let ultimoY: number | null = null
     for (const trozo of contenido.items) {
       if (!('str' in trozo)) continue
       const y = Math.round((trozo.transform?.[5] ?? 0) as number)
-      if (ultimoY !== null && Math.abs(y - ultimoY) > 2) texto += '\n'
-      texto += trozo.str
-      if ('hasEOL' in trozo && trozo.hasEOL) texto += '\n'
+      const cambioDeLinea = ultimoY !== null && Math.abs(y - ultimoY) > 2
+      if (cambioDeLinea && linea.trim()) { lineas.push(linea); linea = '' }
+      linea += trozo.str
+      if ('hasEOL' in trozo && trozo.hasEOL) {
+        if (linea.trim()) lineas.push(linea)
+        linea = ''
+      }
       ultimoY = y
     }
-    paginas.push({ numero: n, texto: limpiar(texto) })
+    if (linea.trim()) lineas.push(linea)
+
+    paginas.push({ numero: n, texto: reflujo(lineas) })
     alAvanzar?.(n, documento.numPages)
   }
 
@@ -38,11 +45,45 @@ export async function extraerTextoPdf(
   return paginas
 }
 
-/** Junta palabras cortadas por guión al final de línea y aprieta espacios. */
-function limpiar(texto: string): string {
-  return texto
-    .replace(/-\n(?=[a-zá-úñ])/g, '')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
+/**
+ * Un PDF entrega una línea por renglón visual, cortada a mitad de frase. Leer
+ * eso es horrible y además parte los párrafos en pedazos inservibles. Acá se
+ * rearman los párrafos: las líneas se pegan salvo cuando de verdad termina una
+ * idea, y los títulos se dejan solos.
+ */
+function reflujo(lineas: string[]): string {
+  const parrafos: string[] = []
+  let actual = ''
+
+  const cierra = (l: string) => /[.:;!?]["»)]?$/.test(l)
+  const corta = (l: string) => l.length < 55
+  const soloMayusculas = (l: string) => !/\p{Ll}/u.test(l) && /\p{Lu}/u.test(l)
+  const numerada = (l: string) => /^\s*(?:\d{1,2}(?:\.\d{1,2})*|[IVXLCDM]{1,7}|[a-zA-Z])\s*[.)\-–]/.test(l)
+
+  const cerrar = () => {
+    if (actual.trim()) parrafos.push(actual.trim())
+    actual = ''
+  }
+
+  for (const cruda of lineas) {
+    const l = cruda.replace(/[ \t]+/g, ' ').trim()
+    if (!l) { cerrar(); continue }
+
+    // Títulos: van solos, sin pegarse a lo que viene.
+    if (soloMayusculas(l) || (corta(l) && numerada(l))) {
+      cerrar()
+      parrafos.push(l)
+      continue
+    }
+
+    // Palabra cortada con guión al final del renglón.
+    if (/[a-zá-úñ]-$/.test(actual)) actual = actual.slice(0, -1) + l
+    else actual = actual ? `${actual} ${l}` : l
+
+    // Última línea de un párrafo: corta y terminada en punto.
+    if (cierra(l) && corta(l)) cerrar()
+  }
+  cerrar()
+
+  return parrafos.join('\n\n').replace(/\n{3,}/g, '\n\n').trim()
 }

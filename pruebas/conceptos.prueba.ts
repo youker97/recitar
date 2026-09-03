@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { conceptosDeBloque, revisarVolcado } from '../src/logica/conceptos'
+import { conceptosDeBloque, conceptosDeTexto, revisarVolcado } from '../src/logica/conceptos'
 import { calibracion, prontitudEn, retrievabilidad } from '../src/logica/prontitud'
 import { progresoNuevo } from '../src/logica/programador'
 import type { Item, Revision } from '../src/datos/tipos'
@@ -42,6 +42,65 @@ describe('conceptos de un bloque', () => {
 
   it('cada concepto sabe de qué ítem salió, para poder ir a estudiarlo', () => {
     expect(conceptos.every((c) => c.itemId && c.ref)).toBe(true)
+  })
+})
+
+const APUNTE = `TEORIA DE LA TIPICIDAD
+
+1.- Nocion y sentido.
+
+La tipicidad es la adecuacion de una conducta concreta a la descripcion abstracta contenida en el
+tipo penal. La funcion garantista del tipo deriva del principio de legalidad, que impide castigar
+comportamientos no descritos previamente. De alli que se afirme que no hay delito sin tipo.
+
+2.- Estructura del tipo.
+
+El tipo penal se compone de un sujeto activo, un sujeto pasivo, una conducta descrita mediante un
+verbo rector, un objeto material y un bien juridico protegido. El sujeto activo es quien realiza la
+conducta. El sujeto pasivo es el titular del bien juridico lesionado. El objeto material es la cosa
+sobre la que recae la accion, y el bien juridico protegido es el interes que la norma resguarda.
+
+3.- Elementos descriptivos y normativos.
+
+Los elementos descriptivos se captan por los sentidos. Los elementos normativos exigen una
+valoracion. La distincion entre elementos descriptivos y normativos importa para el error de tipo,
+porque el error sobre elementos normativos se trata de otra manera que el error sobre elementos
+descriptivos. El bien juridico vuelve a aparecer al interpretar los elementos normativos.`
+
+describe('conceptos sacados del apunte, sin preguntas todavía', () => {
+  const conceptos = conceptosDeTexto(APUNTE, 'Tipicidad', 'Apunte')
+  const terminos = conceptos.map((c) => c.termino.toLowerCase())
+
+  it('toma el título del apunte como concepto', () => {
+    expect(terminos.some((t) => t.includes('teoria de la tipicidad'))).toBe(true)
+  })
+
+  it('reconoce los términos técnicos que se repiten', () => {
+    expect(terminos.some((t) => t.includes('elementos descriptivos'))).toBe(true)
+    expect(terminos.some((t) => t.includes('elementos normativos'))).toBe(true)
+  })
+
+  it('toma las frases que se repiten, no las que aparecen una vez', () => {
+    expect(terminos.some((t) => t.includes('bien juridico'))).toBe(true)
+    expect(terminos.some((t) => t.includes('sujeto'))).toBe(true)
+  })
+
+  it('no toma frases de relleno', () => {
+    expect(terminos.some((t) => t.includes('otra manera'))).toBe(false)
+    expect(terminos.some((t) => t.includes('vuelve a aparecer'))).toBe(false)
+  })
+
+  it('un volcado que nombra la materia puntúa de verdad', () => {
+    const bueno =
+      'La estructura del tipo comprende sujeto activo, sujeto pasivo, objeto material y ' +
+      'bien juridico protegido. Los elementos descriptivos se captan por los sentidos y los ' +
+      'normativos exigen valoracion.'
+    const r = revisarVolcado(bueno, conceptos)
+    expect(r.cobertura).toBeGreaterThan(35)
+  })
+
+  it('un volcado en blanco no puntúa', () => {
+    expect(revisarVolcado('No me acuerdo de nada.', conceptos).cobertura).toBe(0)
   })
 })
 
