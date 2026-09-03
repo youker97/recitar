@@ -192,7 +192,7 @@ export function Inicio() {
         <div className="acciones">
           <a className="accion" href="#/pasada">
             <strong>Primera pasada</strong>
-            <span>Para lo que todavía no entiendes: predecir, leer y cerrar el texto.</span>
+            <span>Para lo que todavía no entiendes: leer un tema y escribirlo sin mirar.</span>
           </a>
           <a className="accion" href="#/volcado">
             <strong>Volcado</strong>
