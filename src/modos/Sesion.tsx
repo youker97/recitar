@@ -9,6 +9,7 @@ import { hijosDe } from '../logica/cadena'
 import { useUbicacion, ir } from '../rutas'
 import { formatearDuracion } from '../componentes/Cronometro'
 import { ModoVF } from './ModoVF'
+import { ModoAlternativas } from './ModoAlternativas'
 import { ModoLista } from './ModoLista'
 import { ModoArticulo } from './ModoArticulo'
 import { ModoTextoLegal } from './ModoTextoLegal'
@@ -257,6 +258,7 @@ export function Sesion() {
   let cuerpo
   switch (actual.tipo) {
     case 'vf': cuerpo = <ModoVF key={clave} {...propsComunes} />; break
+    case 'alternativas': cuerpo = <ModoAlternativas key={clave} {...propsComunes} />; break
     case 'lista': cuerpo = <ModoLista key={clave} {...propsComunes} />; break
     case 'articulo':
       cuerpo = (

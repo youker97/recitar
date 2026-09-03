@@ -10,11 +10,13 @@ import { Evaluaciones } from './pantallas/Evaluaciones'
 import { Importar } from './pantallas/Importar'
 import { Ajustes as PantallaAjustes } from './pantallas/Ajustes'
 import { Estadisticas } from './pantallas/Estadisticas'
+import { Ensayo } from './pantallas/Ensayo'
 import { Sesion } from './modos/Sesion'
 
 const NAVEGACION = [
   { ruta: '/', texto: 'Hoy' },
   { ruta: '/errores', texto: 'Errores' },
+  { ruta: '/ensayo', texto: 'Ensayo' },
   { ruta: '/material', texto: 'Material' },
   { ruta: '/pruebas', texto: 'Pruebas' },
   { ruta: '/importar', texto: 'Importar' },
@@ -40,6 +42,7 @@ export default function App() {
     case '/': pantalla = <Inicio />; break
     case '/estudiar': pantalla = <Sesion />; break
     case '/errores': pantalla = <Errores />; break
+    case '/ensayo': pantalla = <Ensayo />; break
     case '/material': pantalla = <Material />; break
     case '/editor': pantalla = <Editor />; break
     case '/pruebas': pantalla = <Evaluaciones />; break
@@ -55,7 +58,7 @@ export default function App() {
       )
   }
 
-  const enSesion = ruta === '/estudiar'
+  const enSesion = ruta === '/estudiar' || ruta === '/ensayo'
 
   return (
     <>

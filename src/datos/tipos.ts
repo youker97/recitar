@@ -2,6 +2,7 @@
 
 export type TipoItem =
   | 'vf'
+  | 'alternativas'
   | 'lista'
   | 'articulo'
   | 'textoLegal'
@@ -10,11 +11,12 @@ export type TipoItem =
   | 'repregunta'
 
 export const TIPOS_ITEM: TipoItem[] = [
-  'vf', 'lista', 'articulo', 'textoLegal', 'triaje', 'desarrollo', 'repregunta',
+  'vf', 'alternativas', 'lista', 'articulo', 'textoLegal', 'triaje', 'desarrollo', 'repregunta',
 ]
 
 export const NOMBRE_TIPO: Record<TipoItem, string> = {
   vf: 'Verdadero o falso',
+  alternativas: 'Alternativas',
   lista: 'Lista contada',
   articulo: 'Artículo',
   textoLegal: 'Texto legal con huecos',
@@ -36,6 +38,29 @@ export interface DatosVF {
   pregunta: string
   esVerdadera: boolean
   justificacion: string
+  /**
+   * Términos que tienen que aparecer en una justificación bien dada. Sirven
+   * para que la app corrija sola, sin internet. Si no vienen, se deducen de
+   * la justificación correcta.
+   */
+  claves?: string[]
+}
+
+export interface DatosAlternativas {
+  pregunta: string
+  opciones: string[]
+  /** Índice de la opción correcta dentro de "opciones". */
+  correcta: number
+  explicacion: string
+}
+
+/**
+ * Un punto de la pauta de desarrollo. "claves" son los términos que la app
+ * busca en la respuesta escrita para corregir sola.
+ */
+export interface PuntoPauta {
+  texto: string
+  claves?: string[]
 }
 
 export interface DatosLista {
@@ -66,7 +91,8 @@ export interface DatosTriaje {
 
 export interface DatosDesarrollo {
   enunciado: string
-  checklist: string[]
+  /** Se acepta texto pelado (formato antiguo) o punto con claves. */
+  checklist: (string | PuntoPauta)[]
   minutosSugeridos?: number
 }
 
@@ -76,7 +102,7 @@ export interface DatosRepregunta {
 }
 
 export type DatosItem =
-  | DatosVF | DatosLista | DatosArticulo | DatosTextoLegal
+  | DatosVF | DatosAlternativas | DatosLista | DatosArticulo | DatosTextoLegal
   | DatosTriaje | DatosDesarrollo | DatosRepregunta
 
 export type OrigenItem = 'manual' | 'json' | 'md' | 'txt' | 'pdf' | 'ejemplo'
@@ -146,7 +172,7 @@ export const NOMBRE_NOTA: Record<Nota, string> = {
 }
 
 export type ModoEstudio =
-  | 'vf' | 'lista' | 'articuloNumeroMateria' | 'articuloMateriaNumero'
+  | 'vf' | 'alternativas' | 'lista' | 'articuloNumeroMateria' | 'articuloMateriaNumero'
   | 'textoLegal' | 'triaje' | 'desarrolloPapel' | 'desarrolloTecleado' | 'oral'
 
 export interface Revision {
@@ -206,7 +232,8 @@ export interface Ajustes {
   cadenaActiva: boolean
   varianteDesarrollo: 'papel' | 'tecleado'
   grabarOral: boolean
-  lineasMaxVF: number
+  /** Cuántos ítems al día cuentan para mantener la racha. */
+  metaDiaria: number
   nuevosPorDia: number
   tamanoTexto: 'normal' | 'grande'
   cursoActivoId?: string
@@ -221,7 +248,7 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   cadenaActiva: true,
   varianteDesarrollo: 'papel',
   grabarOral: true,
-  lineasMaxVF: 3,
+  metaDiaria: 15,
   nuevosPorDia: 20,
   tamanoTexto: 'normal',
   mostrarConsejos: true,

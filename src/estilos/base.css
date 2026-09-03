@@ -6,7 +6,15 @@ html, body, #raiz { min-height: 100%; }
 
 body {
   margin: 0;
-  background: var(--papel);
+  background-color: var(--papel);
+  /* Renglones de cuaderno, apenas insinuados. */
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent 0,
+    transparent 33px,
+    var(--renglon) 33px,
+    var(--renglon) 34px
+  );
   color: var(--tinta);
   font-family: var(--sans);
   font-size: 1rem;
@@ -169,8 +177,6 @@ input[type='text'], input[type='date'], input[type='number'], textarea, select {
   min-height: 2.75rem;
 }
 textarea { min-height: 6rem; resize: vertical; line-height: 1.5; }
-/* La caja con límite de líneas se dimensiona por sus renglones, no por un mínimo. */
-textarea.caja-limite { min-height: 0; }
 textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 
 .opciones { display: grid; gap: 0.5rem; }
@@ -247,7 +253,6 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 
 .contador { font-size: 0.78rem; color: var(--tinta-tenue); font-variant-numeric: tabular-nums; }
 .contador-pasado { color: var(--rojo); font-weight: 600; }
-textarea.pasado { border-color: var(--rojo); background: var(--rojo-suave); }
 
 .cronometro {
   font-family: var(--mono);
@@ -306,3 +311,93 @@ textarea.pasado { border-color: var(--rojo); background: var(--rojo-suave); }
 @media (min-width: 36rem) { .grilla-dos { grid-template-columns: 1fr 1fr; } }
 
 @media print { .cinta, .pie-fijo, .boton { display: none !important; } }
+
+
+/* ---------- racha, dominio y marcadores ---------- */
+
+.racha {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--papel-alto);
+  border: 1px solid var(--linea);
+  border-left: 3px solid var(--rojo);
+  margin: 1rem 0;
+}
+
+.racha-numero {
+  padding-top: 0.15rem;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 2.6rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.racha-numero small { display: block; font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--tinta-tenue); }
+.racha .crece { flex: 1; min-width: 0; }
+
+.calendario {
+  display: grid;
+  grid-template-rows: repeat(7, 8px);
+  grid-auto-flow: column;
+  grid-auto-columns: 8px;
+  gap: 2px;
+  margin-top: 0.5rem;
+  justify-content: start;
+  overflow: hidden;
+}
+.calendario i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: var(--linea);
+  border-radius: 1px;
+}
+.calendario i[data-nivel='1'] { background: color-mix(in srgb, var(--rojo) 45%, var(--linea)); }
+.calendario i[data-nivel='2'] { background: var(--rojo); }
+.calendario i[data-hoy='si'] { outline: 1px solid var(--tinta); outline-offset: 1px; }
+
+.barra {
+  display: inline-block;
+  width: 5.5rem;
+  height: 6px;
+  background: var(--linea);
+  overflow: hidden;
+  flex: none;
+}
+.barra > span { display: block; height: 100%; background: var(--tinta); }
+.barra-ancha { width: 100%; height: 8px; }
+
+.dominio { display: grid; gap: 0.1rem; }
+.dominio-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--linea);
+}
+.dominio-fila:last-child { border-bottom: 0; }
+.dominio-fila .crece { flex: 1; min-width: 0; }
+.dominio-fila .porcentaje { font-variant-numeric: tabular-nums; font-family: var(--serif); font-size: 1.15rem; min-width: 2.8rem; text-align: right; }
+
+.marcador { text-align: center; padding: 1.5rem 0 0.5rem; }
+.marcador-cifra {
+  font-family: var(--serif);
+  font-size: 3.6rem;
+  line-height: 1;
+}
+
+.anillo { display: flex; align-items: center; gap: 0.75rem; }
+
+/* ---------- pulido ---------- */
+
+.boton { box-shadow: 0 1px 0 var(--sombra); }
+.boton:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.boton-plano, .boton-fuerte:active { box-shadow: none; }
+.opcion { transition: background 90ms linear, border-color 90ms linear; }
+.opcion:hover:not([aria-pressed='true']):not(:disabled) { border-color: var(--tinta); }
+.hoja { box-shadow: 0 1px 0 var(--sombra); }
+
+.titulo-seccion h1, .titulo-seccion h2 { letter-spacing: -0.01em; }
+.seccion + .seccion { margin-top: 1.75rem; }

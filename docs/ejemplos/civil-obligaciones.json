@@ -28,6 +28,12 @@
           "respuesta": "Solo en los bilaterales. En los unilaterales no hay obligaciones recíprocas que puedan quedar incumplidas por la contraparte.",
           "ref": "art. 1489 inc. 1 CC"
         }
+      ],
+      "claves": [
+        "sentencia judicial",
+        "1489",
+        "resolución",
+        "cumplimiento"
       ]
     },
     {
@@ -129,12 +135,45 @@
       "enunciado": "Explique los elementos de la responsabilidad civil extracontractual.",
       "minutosSugeridos": 12,
       "checklist": [
-        "Capacidad delictual del autor",
-        "Hecho u omisión voluntaria del agente",
-        "Dolo o culpa (factor de imputación)",
-        "Daño",
-        "Relación de causalidad entre el hecho y el daño",
-        "Menciona el art. 2314 como fuente de la obligación de indemnizar"
+        {
+          "texto": "Capacidad delictual del autor",
+          "claves": [
+            "capacidad",
+            "delictual"
+          ]
+        },
+        {
+          "texto": "Hecho u omisión voluntaria del agente",
+          "claves": [
+            "hecho",
+            "omisión"
+          ]
+        },
+        {
+          "texto": "Dolo o culpa (factor de imputación)",
+          "claves": [
+            "dolo",
+            "culpa"
+          ]
+        },
+        {
+          "texto": "Daño",
+          "claves": [
+            "daño"
+          ]
+        },
+        {
+          "texto": "Relación de causalidad entre el hecho y el daño",
+          "claves": [
+            "causalidad"
+          ]
+        },
+        {
+          "texto": "Menciona el art. 2314 como fuente de la obligación de indemnizar",
+          "claves": [
+            "2314"
+          ]
+        }
       ],
       "hijos": [
         {
@@ -158,12 +197,45 @@
       "enunciado": "Explique la graduación de la culpa en el Código Civil y para qué sirve.",
       "minutosSugeridos": 10,
       "checklist": [
-        "Culpa grave o lata: no manejar los negocios ajenos con el cuidado que aun las personas negligentes emplean en los suyos",
-        "La culpa grave equivale al dolo en materia civil",
-        "Culpa leve: falta de la diligencia que los hombres emplean ordinariamente en sus negocios propios",
-        "Culpa levísima: falta de la esmerada diligencia de un hombre juicioso",
-        "Sirve para determinar de qué culpa responde el deudor según a quién beneficia el contrato",
-        "Cita el art. 44 y el art. 1547"
+        {
+          "texto": "Culpa grave o lata: no manejar los negocios ajenos con el cuidado que aun las personas negligentes emplean en los suyos",
+          "claves": [
+            "culpa grave",
+            "lata"
+          ]
+        },
+        {
+          "texto": "La culpa grave equivale al dolo en materia civil",
+          "claves": [
+            "equivale al dolo"
+          ]
+        },
+        {
+          "texto": "Culpa leve: falta de la diligencia que los hombres emplean ordinariamente en sus negocios propios",
+          "claves": [
+            "culpa leve"
+          ]
+        },
+        {
+          "texto": "Culpa levísima: falta de la esmerada diligencia de un hombre juicioso",
+          "claves": [
+            "culpa levísima"
+          ]
+        },
+        {
+          "texto": "Sirve para determinar de qué culpa responde el deudor según a quién beneficia el contrato",
+          "claves": [
+            "beneficia",
+            "contrato"
+          ]
+        },
+        {
+          "texto": "Cita el art. 44 y el art. 1547",
+          "claves": [
+            "44",
+            "1547"
+          ]
+        }
       ],
       "hijos": [
         {
@@ -187,6 +259,48 @@
           "pregunta": "¿Quién puede pedir la declaración de nulidad absoluta?",
           "respuesta": "Todo el que tenga interés en ello, salvo el que ejecutó el acto sabiendo o debiendo saber el vicio; también el ministerio público en interés de la moral o de la ley, y el juez puede declararla de oficio cuando aparece de manifiesto en el acto o contrato.",
           "ref": "art. 1683 CC"
+        }
+      ],
+      "claves": [
+        "ratificación",
+        "diez años",
+        "nulidad relativa",
+        "cuatro años"
+      ]
+    },
+    {
+      "tipo": "alternativas",
+      "bloque": "Obligaciones",
+      "ref": "art. 1567 CC",
+      "pregunta": "¿Cuál de estos NO es un modo de extinguir las obligaciones del art. 1567?",
+      "opciones": [
+        "La tradición",
+        "La novación",
+        "La compensación",
+        "La confusión"
+      ],
+      "correcta": 0,
+      "explicacion": "La tradición es un modo de adquirir el dominio, no de extinguir obligaciones. Los otros tres están en la enumeración del art. 1567."
+    },
+    {
+      "tipo": "alternativas",
+      "bloque": "Acto jurídico",
+      "ref": "art. 1682 CC",
+      "pregunta": "El acto celebrado por un absolutamente incapaz adolece de:",
+      "opciones": [
+        "Nulidad absoluta",
+        "Nulidad relativa",
+        "Inoponibilidad",
+        "Resolución"
+      ],
+      "correcta": 0,
+      "explicacion": "El art. 1682 sanciona con nulidad absoluta los actos de los absolutamente incapaces. La nulidad relativa queda para los relativamente incapaces y los vicios del consentimiento.",
+      "hijos": [
+        {
+          "tipo": "repregunta",
+          "pregunta": "¿Y quiénes son los absolutamente incapaces?",
+          "respuesta": "Los dementes, los impúberes y los sordos o sordomudos que no pueden darse a entender claramente.",
+          "ref": "art. 1447 inc. 1 CC"
         }
       ]
     }

@@ -3,7 +3,7 @@
 
 import { nuevoId } from './db'
 import type {
-  DatosItem, Item, OrigenItem, TipoItem, Verbo,
+  DatosItem, Item, OrigenItem, PuntoPauta, TipoItem, Verbo,
 } from './tipos'
 import { TIPOS_ITEM } from './tipos'
 
@@ -33,6 +33,23 @@ const VERBOS: Verbo[] = ['definir', 'posturas', 'importancia', 'distinciones']
 
 function esTexto(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0
+}
+
+/** La pauta acepta textos pelados o puntos con sus claves. */
+function listaDePuntos(v: unknown): PuntoPauta[] | null {
+  if (!Array.isArray(v)) return null
+  const salida: PuntoPauta[] = []
+  for (const x of v) {
+    if (esTexto(x)) { salida.push({ texto: x.trim() }); continue }
+    if (typeof x === 'object' && x !== null) {
+      const o = x as Record<string, unknown>
+      if (!esTexto(o.texto)) return null
+      salida.push({ texto: o.texto.trim(), claves: listaDeTextos(o.claves) ?? undefined })
+      continue
+    }
+    return null
+  }
+  return salida
 }
 
 function listaDeTextos(v: unknown): string[] | null {
@@ -83,6 +100,28 @@ function validarItem(
           pregunta: o.pregunta.trim(),
           esVerdadera: o.esVerdadera,
           justificacion: o.justificacion.trim(),
+          claves: listaDeTextos(o.claves) ?? undefined,
+        }
+      }
+      break
+    }
+    case 'alternativas': {
+      const opciones = listaDeTextos(o.opciones)
+      if (!esTexto(o.pregunta)) falta('pregunta')
+      if (!opciones) falta('opciones', '(una lista de textos, sin vacíos)')
+      else if (opciones.length < 3) errores.push({ donde, mensaje: '"opciones" necesita al menos 3' })
+      const correcta = Number(o.correcta)
+      if (!Number.isInteger(correcta) || correcta < 0 || (opciones && correcta >= opciones.length)) {
+        errores.push({
+          donde,
+          mensaje: '"correcta" debe ser el número de la opción correcta, partiendo de 0',
+        })
+      } else if (opciones && opciones.length >= 3 && esTexto(o.pregunta)) {
+        datos = {
+          pregunta: o.pregunta.trim(),
+          opciones,
+          correcta,
+          explicacion: esTexto(o.explicacion) ? o.explicacion.trim() : '',
         }
       }
       break
@@ -136,9 +175,9 @@ function validarItem(
       break
     }
     case 'desarrollo': {
-      const checklist = listaDeTextos(o.checklist)
+      const checklist = listaDePuntos(o.checklist)
       if (!esTexto(o.enunciado)) falta('enunciado')
-      if (!checklist) falta('checklist', '(la pauta, como lista de textos)')
+      if (!checklist) falta('checklist', '(la pauta: textos, o {"texto":"...","claves":["..."]})')
       else if (checklist.length < 2) errores.push({ donde, mensaje: '"checklist" necesita al menos 2 puntos' })
       if (esTexto(o.enunciado) && checklist && checklist.length >= 2) {
         datos = {

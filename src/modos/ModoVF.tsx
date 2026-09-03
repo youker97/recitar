@@ -1,28 +1,28 @@
 import { useState } from 'react'
 import type { DatosVF } from '../datos/tipos'
-import { CajaConLimite } from '../componentes/ContadorLineas'
 import { ElegirConfianza } from '../componentes/Confianza'
 import { Autocalificacion } from '../componentes/Autocalificacion'
+import { contarPalabras, revisarJustificacion } from '../logica/corrector'
+import { RevisionAutomatica } from '../componentes/RevisionAutomatica'
 import { BotonRevelar, Encabezado, Enunciado, Referencia, useFases, type PropsModo } from './comun'
 
-export function ModoVF({ item, ajustes, onListo, enCadena }: PropsModo) {
+const MINIMO_PALABRAS = 6
+
+export function ModoVF({ item, onListo, enCadena }: PropsModo) {
   const datos = item.datos as DatosVF
   const [eleccion, setEleccion] = useState<boolean | null>(null)
   const [justificacion, setJustificacion] = useState('')
-  const [excedido, setExcedido] = useState(false)
   const { fase, confianza, pedirConfianza, elegirConfianza, calificar } = useFases('vf', onListo)
 
   const acerto = eleccion === datos.esVerdadera
-  const suficiente = justificacion.trim().length >= 10
-  const puede = eleccion !== null && suficiente && !excedido
+  const palabras = contarPalabras(justificacion)
+  const puede = eleccion !== null && palabras >= MINIMO_PALABRAS
 
   const motivo = eleccion === null
     ? 'Primero marca verdadero o falso.'
-    : !suficiente
-      ? 'Escribe la justificación: sin justificar no vale.'
-      : excedido
-        ? `Te pasaste de ${ajustes.lineasMaxVF} líneas.`
-        : undefined
+    : `Justifica: te faltan ${MINIMO_PALABRAS - palabras} palabras. Sin justificar no vale.`
+
+  const revision = fase === 'revelado' ? revisarJustificacion(justificacion, datos) : null
 
   return (
     <div>
@@ -50,13 +50,16 @@ export function ModoVF({ item, ajustes, onListo, enCadena }: PropsModo) {
             </button>
           </div>
 
-          <CajaConLimite
-            etiqueta={`Justificación (máximo ${ajustes.lineasMaxVF} líneas)`}
-            valor={justificacion}
-            onCambiar={setJustificacion}
-            limite={ajustes.lineasMaxVF}
-            onExcedido={setExcedido}
-          />
+          <label className="campo">
+            <span>Justificación — completa, como la darías en la prueba</span>
+            <textarea
+              className="serif"
+              rows={5}
+              value={justificacion}
+              onChange={(e) => setJustificacion(e.target.value)}
+            />
+            <span className="contador">{palabras} palabras</span>
+          </label>
 
           <BotonRevelar puede={puede} motivo={motivo} onClick={pedirConfianza} />
         </>
@@ -79,13 +82,26 @@ export function ModoVF({ item, ajustes, onListo, enCadena }: PropsModo) {
           <p className="estudio">{datos.justificacion}</p>
           <Referencia item={item} />
 
+          {revision && revision.total > 0 && (
+            <RevisionAutomatica
+              revision={revision}
+              titulo="Las ideas que tenía que traer tu justificación"
+            />
+          )}
+
           <h3 style={{ marginTop: '1.2rem' }}>La tuya</h3>
           <p className="estudio" style={{ color: 'var(--tinta-suave)' }}>{justificacion}</p>
 
           <hr className="filete" />
           <Autocalificacion
             confianza={confianza}
-            onCalificar={(n) => calificar(n, { respuesta: justificacion })}
+            onCalificar={(n) =>
+              calificar(n, {
+                respuesta: justificacion,
+                aciertos: revision?.encontrados,
+                total: revision?.total,
+              })
+            }
           />
         </>
       )}

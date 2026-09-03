@@ -54,12 +54,14 @@ const ESQUEMA = `{
 
 Cada ítem es un objeto con "tipo", "bloque", "ref" y los campos de su tipo:
 
-- {"tipo":"vf","bloque":"","ref":"","pregunta":"","esVerdadera":true|false,"justificacion":""}
+- {"tipo":"vf","bloque":"","ref":"","pregunta":"","esVerdadera":true|false,"justificacion":"","claves":["término 1","término 2"]}
+- {"tipo":"alternativas","bloque":"","ref":"","pregunta":"","opciones":["a","b","c","d"],"correcta":0,"explicacion":"por qué esa y por qué no las otras"}
 - {"tipo":"lista","bloque":"","ref":"","titulo":"","articulo":"(opcional)","elementos":["","",""]}
 - {"tipo":"articulo","bloque":"","ref":"","numero":"1489","materia":"de qué trata","cuerpo":"Código Civil"}
 - {"tipo":"textoLegal","bloque":"","ref":"","numero":"1545","textoLiteral":"el texto exacto, sin resumir"}
 - {"tipo":"triaje","bloque":"","ref":"","enunciado":"","verbo":"definir|posturas|importancia|distinciones"}
-- {"tipo":"desarrollo","bloque":"","ref":"","enunciado":"","checklist":["punto 1","punto 2"],"minutosSugeridos":10}
+- {"tipo":"desarrollo","bloque":"","ref":"","enunciado":"","minutosSugeridos":10,
+   "checklist":[{"texto":"punto de la pauta","claves":["término que debe aparecer","1489"]}]}
 - {"tipo":"repregunta","bloque":"","ref":"","pregunta":"","respuesta":""}
 
 Cualquier ítem puede llevar "hijos": [ ...repreguntas... ], y esas repreguntas
@@ -94,6 +96,13 @@ CÓMO QUIERO LOS ÍTEMS:
 6. Las preguntas de examen que aparezcan en el texto van como "triaje".
 7. Las preguntas grandes van como "desarrollo" con una pauta de 4 a 8 puntos concretos: cada punto
    debe ser algo verificable que yo dije o no dije.
+7.1 IMPORTANTE — cada punto de la pauta lleva "claves": de 1 a 3 términos exactos que tienen que
+   aparecer sí o sí en una respuesta bien dada (el nombre técnico de la institución, el número del
+   artículo, la palabra que no se puede reemplazar). Con eso la app corrige sola cuando no tengo
+   internet. No pongas como clave palabras genéricas ("explica", "importante", "derecho").
+7.2 Los "vf" también llevan "claves": los 2 a 4 términos que tiene que traer la justificación.
+7.3 Las de "alternativas" llevan 4 opciones con distractores creíbles del mismo ramo (confusiones
+   típicas, no opciones absurdas). "correcta" es el índice, partiendo de 0.
 8. ${orientacionOral
     ? 'La prueba es ORAL: cada ítem importante lleva de 2 a 4 repreguntas en "hijos", encadenadas, cada una más honda que la anterior, como el profesor que sigue raspando después de la primera respuesta. Incluye al menos una repregunta que ataque la excepción o el caso límite.'
     : 'Los ítems importantes llevan 1 a 3 repreguntas en "hijos", encadenadas, cada una más honda que la anterior.'}
@@ -146,5 +155,104 @@ export async function copiar(texto: string): Promise<boolean> {
     } catch {
       return false
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Corrección de desarrollos con Claude (el modo "con internet").
+// Sin internet, la app corrige sola buscando en el texto los términos de la
+// pauta; esto es la corrección semántica, que además comenta.
+// ---------------------------------------------------------------------------
+
+export interface OpcionesCorreccion {
+  enunciado: string
+  puntos: string[]
+  respuesta: string
+  ref?: string
+}
+
+export function armarPedidoCorreccion(o: OpcionesCorreccion): string {
+  const pauta = o.puntos.map((p, i) => `${i}. ${p}`).join('\n')
+  const comillas = '"'.repeat(3)
+  return `Eres mi profesor de Derecho en Chile y estás corrigiendo una pregunta de desarrollo.
+Corrige con criterio de examen universitario: exigente pero justo. No me regales puntos, y tampoco
+me castigues por decir lo mismo con otras palabras.
+
+PREGUNTA:
+${o.enunciado}
+${o.ref ? `\nReferencia de la materia: ${o.ref}` : ''}
+
+PAUTA (cada punto va con su número):
+${pauta}
+
+MI RESPUESTA:
+${comillas}
+${o.respuesta}
+${comillas}
+
+Devuelve SOLO este JSON, dentro de un bloque de código:
+
+{
+  "correccion": 1,
+  "puntos": [
+    { "indice": 0, "logrado": true, "comentario": "una línea: qué dije bien o qué faltó" }
+  ],
+  "nota": "laTenia | aMedias | meFalto",
+  "loQueFalto": "lo más importante que no dije, en dos líneas",
+  "comentario": "un consejo concreto para la próxima vez, en dos líneas"
+}
+
+Reglas: un punto es "logrado" solo si la idea está de verdad en mi respuesta, aunque esté dicha con
+otras palabras; no si apenas la insinué. "nota" es "laTenia" si logré casi todo, "aMedias" si logré
+la mitad o si dije algo derechamente equivocado, y "meFalto" si no llegué. Si escribí algo que en
+Derecho está mal, dilo en "comentario" aunque la pauta no lo pregunte.`
+}
+
+export interface Correccion {
+  puntos: { indice: number; logrado: boolean; comentario?: string }[]
+  nota?: 'laTenia' | 'aMedias' | 'meFalto'
+  loQueFalto?: string
+  comentario?: string
+}
+
+export function leerCorreccion(bruto: string, cuantosPuntos: number): Correccion {
+  const limpio = limpiarRespuesta(bruto)
+  if (!limpio) throw new Error('Pega la respuesta de Claude.')
+  let dato: unknown
+  try {
+    dato = JSON.parse(limpio)
+  } catch {
+    throw new Error('Eso no es JSON válido. Copia el bloque de código completo, con sus llaves.')
+  }
+  if (typeof dato !== 'object' || dato === null) {
+    throw new Error('La corrección no tiene el formato esperado.')
+  }
+  const o = dato as Record<string, unknown>
+  if (!Array.isArray(o.puntos)) throw new Error('A la corrección le falta la lista "puntos".')
+
+  const puntos = o.puntos
+    .map((p) => {
+      if (typeof p !== 'object' || p === null) return null
+      const q = p as Record<string, unknown>
+      const indice = Number(q.indice)
+      if (!Number.isInteger(indice) || indice < 0 || indice >= cuantosPuntos) return null
+      return {
+        indice,
+        logrado: q.logrado === true,
+        comentario: typeof q.comentario === 'string' ? q.comentario : undefined,
+      }
+    })
+    .filter((p) => p !== null) as Correccion['puntos']
+
+  if (puntos.length === 0) throw new Error('La corrección no trae ningún punto reconocible.')
+
+  const nota =
+    o.nota === 'laTenia' || o.nota === 'aMedias' || o.nota === 'meFalto' ? o.nota : undefined
+
+  return {
+    puntos,
+    nota,
+    loQueFalto: typeof o.loQueFalto === 'string' ? o.loQueFalto : undefined,
+    comentario: typeof o.comentario === 'string' ? o.comentario : undefined,
   }
 }

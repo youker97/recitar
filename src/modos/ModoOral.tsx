@@ -6,6 +6,7 @@ import { Grabadora } from '../componentes/Grabadora'
 import { ElegirConfianza } from '../componentes/Confianza'
 import { Autocalificacion } from '../componentes/Autocalificacion'
 import { Pauta, sugerirNota } from '../componentes/Pauta'
+import { puntosDe } from '../logica/corrector'
 import { BotonRevelar, Encabezado, Enunciado, Referencia, useFases, type PropsModo } from './comun'
 
 const MINIMO_MS = 20_000
@@ -22,7 +23,7 @@ export function ModoOral({
   const enunciado = esRepregunta
     ? (item.datos as DatosRepregunta).pregunta
     : (item.datos as DatosDesarrollo).enunciado
-  const checklist = esRepregunta ? [] : (item.datos as DatosDesarrollo).checklist
+  const checklist = esRepregunta ? [] : puntosDe((item.datos as DatosDesarrollo).checklist).map((p) => p.texto)
   const minutos = esRepregunta ? undefined : (item.datos as DatosDesarrollo).minutosSugeridos
 
   const [marcados, setMarcados] = useState<boolean[]>(() => checklist.map(() => false))

@@ -101,14 +101,15 @@ export function Ajustes() {
             />
           </label>
           <label className="campo">
-            <span>Líneas máximas en verdadero/falso</span>
+            <span>Meta diaria (para la racha)</span>
             <input
               type="number"
               min={1}
-              max={10}
-              value={ajustes.lineasMaxVF}
-              onChange={(e) => guardarAjustes({ lineasMaxVF: Number(e.target.value) })}
+              max={200}
+              value={ajustes.metaDiaria}
+              onChange={(e) => guardarAjustes({ metaDiaria: Number(e.target.value) })}
             />
+            <span className="apunte">Cuántas respuestas al día cuentan para no cortar la racha.</span>
           </label>
         </div>
       </section>

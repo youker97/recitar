@@ -5,10 +5,16 @@ import { useCursoActivo, useItems } from '../datos/hooks'
 import { ir, useUbicacion } from '../rutas'
 import {
   NOMBRE_TIPO, NOMBRE_VERBO, TIPOS_ITEM,
-  type DatosArticulo, type DatosDesarrollo, type DatosLista, type DatosRepregunta,
+  type DatosAlternativas, type DatosArticulo, type DatosDesarrollo, type DatosLista, type DatosRepregunta,
   type DatosTextoLegal, type DatosTriaje, type DatosVF, type Item, type TipoItem, type Verbo,
 } from '../datos/tipos'
 import { validarPaquete } from '../datos/esquema'
+import { puntosDe } from '../logica/corrector'
+
+function separarClaves(texto: string): string[] | undefined {
+  const claves = texto.split(',').map((c) => c.trim()).filter(Boolean)
+  return claves.length > 0 ? claves : undefined
+}
 
 interface Borrador {
   tipo: TipoItem
@@ -30,6 +36,10 @@ interface Borrador {
   verbo: Verbo
   checklist: string
   minutosSugeridos: string
+  opciones: string
+  correcta: number
+  explicacion: string
+  claves: string
 }
 
 const VACIO: Borrador = {
@@ -37,6 +47,7 @@ const VACIO: Borrador = {
   pregunta: '', esVerdadera: true, justificacion: '', respuesta: '',
   titulo: '', articulo: '', elementos: '', numero: '', materia: '', cuerpo: '',
   textoLiteral: '', enunciado: '', verbo: 'definir', checklist: '', minutosSugeridos: '',
+  opciones: '', correcta: 0, explicacion: '', claves: '',
 }
 
 function aBorrador(item: Item): Borrador {
@@ -45,7 +56,17 @@ function aBorrador(item: Item): Borrador {
   switch (item.tipo) {
     case 'vf': {
       const v = d as unknown as DatosVF
-      return { ...b, pregunta: v.pregunta, esVerdadera: v.esVerdadera, justificacion: v.justificacion }
+      return {
+        ...b, pregunta: v.pregunta, esVerdadera: v.esVerdadera,
+        justificacion: v.justificacion, claves: (v.claves ?? []).join(', '),
+      }
+    }
+    case 'alternativas': {
+      const v = d as unknown as DatosAlternativas
+      return {
+        ...b, pregunta: v.pregunta, opciones: v.opciones.join('\n'),
+        correcta: v.correcta, explicacion: v.explicacion,
+      }
     }
     case 'lista': {
       const v = d as unknown as DatosLista
@@ -68,7 +89,9 @@ function aBorrador(item: Item): Borrador {
       return {
         ...b,
         enunciado: v.enunciado,
-        checklist: v.checklist.join('\n'),
+        checklist: puntosDe(v.checklist)
+          .map((p) => (p.claves?.length ? `${p.texto} | ${p.claves.join(', ')}` : p.texto))
+          .join('\n'),
         minutosSugeridos: v.minutosSugeridos ? String(v.minutosSugeridos) : '',
       }
     }
@@ -84,7 +107,15 @@ function aBruto(b: Borrador): Record<string, unknown> {
   const base = { tipo: b.tipo, bloque: b.bloque.trim(), ref: b.ref.trim() }
   switch (b.tipo) {
     case 'vf':
-      return { ...base, pregunta: b.pregunta, esVerdadera: b.esVerdadera, justificacion: b.justificacion }
+      return {
+        ...base, pregunta: b.pregunta, esVerdadera: b.esVerdadera, justificacion: b.justificacion,
+        claves: separarClaves(b.claves),
+      }
+    case 'alternativas':
+      return {
+        ...base, pregunta: b.pregunta, explicacion: b.explicacion, correcta: b.correcta,
+        opciones: b.opciones.split('\n').map((l) => l.trim()).filter(Boolean),
+      }
     case 'lista':
       return {
         ...base, titulo: b.titulo, articulo: b.articulo || undefined,
@@ -99,7 +130,15 @@ function aBruto(b: Borrador): Record<string, unknown> {
     case 'desarrollo':
       return {
         ...base, enunciado: b.enunciado,
-        checklist: b.checklist.split('\n').map((l) => l.trim()).filter(Boolean),
+        // Cada línea: "punto de la pauta | término, otro término"
+        checklist: b.checklist
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .map((l) => {
+            const [texto, claves] = l.split('|')
+            return { texto: texto.trim(), claves: separarClaves(claves ?? '') }
+          }),
         minutosSugeridos: b.minutosSugeridos ? Number(b.minutosSugeridos) : undefined,
       }
     case 'repregunta':
@@ -246,6 +285,44 @@ export function Editor() {
             <span>Justificación correcta</span>
             <textarea className="serif" rows={4} value={borrador.justificacion} onChange={(e) => cambiar('justificacion', e.target.value)} />
           </label>
+          <label className="campo">
+            <span>Términos que debe traer tu justificación (separados por comas)</span>
+            <input
+              type="text"
+              value={borrador.claves}
+              placeholder="condición resolutoria tácita, 1489, indemnización"
+              onChange={(e) => cambiar('claves', e.target.value)}
+            />
+            <span className="apunte">
+              Con esto la app corrige sola, sin internet. Si lo dejas vacío, los deduce de la
+              justificación.
+            </span>
+          </label>
+        </>
+      )}
+
+      {t === 'alternativas' && (
+        <>
+          <label className="campo">
+            <span>Pregunta</span>
+            <textarea className="serif" rows={3} value={borrador.pregunta} onChange={(e) => cambiar('pregunta', e.target.value)} />
+          </label>
+          <label className="campo">
+            <span>Opciones, una por línea</span>
+            <textarea className="serif" rows={5} value={borrador.opciones} onChange={(e) => cambiar('opciones', e.target.value)} />
+          </label>
+          <label className="campo">
+            <span>¿Cuál es la correcta?</span>
+            <select value={borrador.correcta} onChange={(e) => cambiar('correcta', Number(e.target.value))}>
+              {borrador.opciones.split('\n').map((l) => l.trim()).filter(Boolean).map((o, i) => (
+                <option key={i} value={i}>{String.fromCharCode(97 + i)}) {o.slice(0, 60)}</option>
+              ))}
+            </select>
+          </label>
+          <label className="campo">
+            <span>Explicación</span>
+            <textarea className="serif" rows={3} value={borrador.explicacion} onChange={(e) => cambiar('explicacion', e.target.value)} />
+          </label>
         </>
       )}
 
@@ -326,6 +403,10 @@ export function Editor() {
           <label className="campo">
             <span>Pauta, un punto por línea</span>
             <textarea className="serif" rows={7} value={borrador.checklist} onChange={(e) => cambiar('checklist', e.target.value)} />
+            <span className="apunte">
+              Para que la app corrija sola, agrega después de una barra los términos que tienen que
+              aparecer: <code>Distingue culpa grave de leve | culpa grave, culpa leve, 44</code>
+            </span>
           </label>
           <label className="campo">
             <span>Minutos sugeridos (opcional)</span>

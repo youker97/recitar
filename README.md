@@ -11,7 +11,8 @@ el oral el profesor siempre sigue raspando debajo de la primera respuesta.
 ## Qué hace
 
 - **Nunca muestra la respuesta antes de que produzcas algo.** El botón de
-  revelar está bloqueado hasta que escribas, elijas o hables.
+  revelar está bloqueado hasta que escribas, elijas o hables. Se pide la
+  respuesta completa: no hay límite de largo.
 - **Antes de revelar pregunta cuán seguro estás.** Si dices "seguro" y fallas,
   el ítem queda marcado como **error grave** y vuelve en minutos.
 - **Modo cadena:** después de un ítem vienen sus repreguntas, una tras otra, sin
@@ -24,15 +25,40 @@ el oral el profesor siempre sigue raspando debajo de la primera respuesta.
   puede evitar.
 - **Fechas de prueba:** días que faltan y cuánto toca hoy para llegar, repartido
   en vez de acumulado al final.
+- **Racha diaria**: días seguidos cumpliendo tu meta, con calendario y récord.
+  No es un adorno: la repetición espaciada solo funciona si vuelves mañana.
+- **Cuánto dominas cada materia**, en porcentaje. No cuenta lo que viste, sino
+  cuánto aguanta cada ítem antes de que se te olvide.
+- **Ensayos automáticos**: una evaluación entera sin ver ninguna respuesta hasta
+  el final, que la app corrige sola y sin internet. Además arma preguntas de
+  alternativas con tu propio material, usando otros ítems del mismo bloque como
+  distractores.
 - **Consejos** a partir de lo que de verdad te pasa: en qué bloque se te cae
   todo, si tu seguridad está mal calibrada, si estás acertando adivinando.
 
-### Los siete modos
+### Cómo se corrige un desarrollo
+
+Tres niveles, y los tres conviven:
+
+1. **Sin internet, automático.** Cada punto de la pauta lleva los términos que
+   tienen que aparecer ("condición resolutoria tácita", "1489"). Si escribes
+   tecleando, la app los busca en tu texto aguantando tildes y tipeos, y deja la
+   pauta pre-marcada diciéndote qué no vio. No entiende ideas: busca términos.
+2. **Con internet, con Claude.** Un botón arma el pedido con el enunciado, la
+   pauta y tu respuesta; lo pegas en Claude y su corrección vuelve punto por
+   punto, con comentario. Corrección de verdad, semántica.
+3. **Tu mano**, siempre: puedes marcar o desmarcar cualquier punto.
+
+Verdadero/falso, alternativas, listas, artículos, texto legal y triaje se
+corrigen solos siempre, sin internet ni ayuda.
+
+### Los modos
 
 | Modo | Qué entrena |
 |---|---|
 | Triaje | Identificar de qué es la pregunta y qué te pide, sin responderla |
-| Verdadero o falso | Justificar en **tres líneas duras**, con contador que se pone rojo |
+| Verdadero o falso | Justificar completo; la app revisa qué ideas trajiste |
+| Alternativas | Elegir entre distractores creíbles; las opciones se barajan entre repasos |
 | Lista contada | "El art. X tiene N elementos": los escribes y te dice cuántos antes de cuáles |
 | Artículos | Número → materia y materia → número, alternados |
 | Texto legal | Huecos sobre el texto literal, que cambian entre repasos |

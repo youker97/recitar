@@ -111,6 +111,28 @@ export function convertirApunte(fuente: string): ResultadoApunte {
       continue
     }
 
+    // Alternativas: la correcta se marca con +
+    const alternativas = linea.match(/^(?:ALT|ALTERNATIVAS)\s*[:.]\s*(.+)$/i)
+    if (alternativas) {
+      const { texto: pregunta, ref } = sacarRef(alternativas[1])
+      const opciones: string[] = []
+      let correcta = -1
+      while (i + 1 < lineas.length && /^[-*•+]\s+/.test(lineas[i + 1].trim())) {
+        const cruda2 = lineas[++i].trim()
+        if (cruda2.startsWith('+')) correcta = opciones.length
+        opciones.push(cruda2.replace(/^[-*•+]\s+/, '').trim())
+      }
+      if (opciones.length < 3 || correcta < 0) {
+        restos.push(`${linea}   (necesita 3 opciones o más y marcar la correcta con +)`)
+        continue
+      }
+      nuevo({
+        bloque, tipo: 'alternativas', ref: ref || refActual,
+        datos: { pregunta, opciones, correcta, explicacion: '' }, hijos: [],
+      })
+      continue
+    }
+
     // Lista contada.
     const lista = linea.match(/^(?:LISTA|L)\s*[:.]\s*(.+)$/i)
     if (lista) {

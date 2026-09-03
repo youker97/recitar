@@ -88,6 +88,38 @@ export function similitud(respuesta: string, esperado: string): number {
   return Math.max(cobertura * exceso, porLetras * 0.9)
 }
 
+/** Parecido entre dos palabras sueltas, 0 a 1. */
+export function parecidoPalabra(a: string, b: string): number {
+  if (a === b) return 1
+  const largo = Math.max(a.length, b.length)
+  if (largo === 0) return 0
+  return 1 - distancia(a, b) / largo
+}
+
+/**
+ * ¿Aparece esta frase dentro del texto? Tolerante a tildes, tipeos y palabras
+ * intercaladas. Es lo que permite corregir un desarrollo sin internet: la
+ * pauta trae los términos que tienen que estar y la app los busca.
+ */
+export function contiene(texto: string, frase: string, umbral = 0.84): boolean {
+  const fa = fichas(texto)
+  const fb = fichas(frase)
+  if (fa.length === 0 || fb.length === 0) return false
+
+  const n = fb.length
+  for (let i = 0; i + n <= fa.length; i++) {
+    let suma = 0
+    for (let k = 0; k < n; k++) suma += parecidoPalabra(fa[i + k], fb[k])
+    if (suma / n >= umbral) return true
+  }
+
+  // Las palabras de la frase pueden venir separadas o en otro orden.
+  if (n >= 2) {
+    return fb.every((p) => fa.some((q) => parecidoPalabra(q, p) >= 0.86))
+  }
+  return false
+}
+
 export const UMBRAL = 0.72
 
 export function coincide(a: string, b: string, umbral = UMBRAL): boolean {

@@ -16,6 +16,11 @@ LISTA: Requisitos del acto jurídico [art. 1445]
 - objeto lícito
 - causa lícita
 
+ALT: ¿Qué exige la resolución?
+- Opera de pleno derecho
++ Sentencia judicial
+- Una carta del acreedor
+
 ART 1698: carga de la prueba
 TRIAJE(posturas): Refiérase a la culpa en abstracto o en concreto.
 
@@ -30,7 +35,14 @@ describe('conversión de apuntes .md y .txt', () => {
   const r = convertirApunte(APUNTE)
 
   it('reconoce cada tipo de ítem', () => {
-    expect(r.items.map((i) => i.tipo)).toEqual(['vf', 'lista', 'articulo', 'triaje', 'desarrollo'])
+    expect(r.items.map((i) => i.tipo)).toEqual(['vf', 'lista', 'alternativas', 'articulo', 'triaje', 'desarrollo'])
+  })
+
+  it('reconoce la alternativa marcada con +', () => {
+    const alt = r.items.find((i) => i.tipo === 'alternativas')!
+    const d = alt.datos as { opciones: string[]; correcta: number }
+    expect(d.opciones).toHaveLength(3)
+    expect(d.opciones[d.correcta]).toBe('Sentencia judicial')
   })
 
   it('cuelga la repregunta del ítem anterior', () => {
@@ -40,7 +52,7 @@ describe('conversión de apuntes .md y .txt', () => {
 
   it('usa el encabezado como bloque y la referencia suelta como ref', () => {
     expect(r.items[0].bloque).toBe('Obligaciones')
-    expect(r.items[1].ref).toBe('art. 1445')
+    expect(r.items.find((i) => i.tipo === 'lista')!.ref).toBe('art. 1445')
   })
 
   it('no se traga las líneas que no entiende: las deja aparte', () => {

@@ -446,6 +446,11 @@ LISTA: Requisitos del acto jurídico [art. 1445]
 - objeto lícito
 - causa lícita
 
+ALT: ¿Qué exige la resolución por incumplimiento?
+- Opera de pleno derecho
++ Sentencia judicial que la declare
+- Basta una carta del acreedor
+
 ART 1698: carga de la prueba
 TEXTO 1545: Todo contrato legalmente celebrado es una ley para los contratantes...
 TRIAJE(posturas): Refiérase a la culpa en abstracto o en concreto.

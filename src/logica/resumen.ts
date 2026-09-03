@@ -1,5 +1,5 @@
 import type {
-  DatosArticulo, DatosDesarrollo, DatosLista, DatosRepregunta,
+  DatosAlternativas, DatosArticulo, DatosDesarrollo, DatosLista, DatosRepregunta,
   DatosTextoLegal, DatosTriaje, DatosVF, Item,
 } from '../datos/tipos'
 
@@ -7,6 +7,7 @@ import type {
 export function resumenDeItem(item: Item): string {
   switch (item.tipo) {
     case 'vf': return (item.datos as DatosVF).pregunta
+    case 'alternativas': return (item.datos as DatosAlternativas).pregunta
     case 'lista': return (item.datos as DatosLista).titulo
     case 'articulo': {
       const d = item.datos as DatosArticulo

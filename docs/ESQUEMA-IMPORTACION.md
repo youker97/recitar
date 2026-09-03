@@ -29,9 +29,22 @@ y qué campo está mal.
 {"tipo":"vf","bloque":"Obligaciones","ref":"art. 1489 CC",
  "pregunta":"La condición resolutoria tácita opera de pleno derecho.",
  "esVerdadera":false,
- "justificacion":"Requiere sentencia judicial; el 1489 da la opción entre cumplimiento y resolución."}
+ "justificacion":"Requiere sentencia judicial; el 1489 da la opción entre cumplimiento y resolución.",
+ "claves":["sentencia judicial","1489","resolución"]}
 ```
 `esVerdadera` es booleano: `true` o `false`, **sin comillas**.
+`claves` es opcional: son los términos que tiene que traer una justificación bien dada. Con eso la
+app revisa sola lo que escribiste, sin internet. Si no vienen, los deduce de la justificación.
+
+```json
+{"tipo":"alternativas","bloque":"Obligaciones","ref":"art. 1567 CC",
+ "pregunta":"¿Cuál de estos NO es un modo de extinguir las obligaciones?",
+ "opciones":["La tradición","La novación","La compensación","La confusión"],
+ "correcta":0,
+ "explicacion":"La tradición es un modo de adquirir el dominio."}
+```
+Mínimo tres opciones. `correcta` es el índice, **partiendo de 0**. Las opciones se barajan solas y
+cambian de posición entre repasos.
 
 ```json
 {"tipo":"lista","bloque":"Acto jurídico","ref":"art. 1445 CC",
@@ -65,11 +78,21 @@ Para forzar un hueco, escribe la palabra entre llaves dobles: `{{invalidado}}`.
 ```json
 {"tipo":"desarrollo","bloque":"Responsabilidad","ref":"arts. 2314 y ss.",
  "enunciado":"Explique los elementos de la responsabilidad extracontractual.",
- "checklist":["Capacidad","Hecho voluntario","Dolo o culpa","Daño","Causalidad"],
- "minutosSugeridos":12}
+ "minutosSugeridos":12,
+ "checklist":[
+   {"texto":"Capacidad delictual del autor","claves":["capacidad","delictual"]},
+   {"texto":"Dolo o culpa","claves":["dolo","culpa"]},
+   {"texto":"Cita el art. 2314","claves":["2314"]}
+ ]}
 ```
 Mínimo dos puntos de pauta. Cada punto debe ser algo que se pueda tildar como
 dicho o no dicho.
+
+Las `claves` de cada punto son **cómo la app corrige sola tu desarrollo**: si escribes tecleando,
+busca esos términos en tu texto (aguantando tildes y tipeos) y deja la pauta pre-marcada. Sirven
+términos técnicos y números de artículo; no sirven palabras genéricas como "explica" o "derecho".
+Se acepta también la forma antigua (`"checklist": ["punto uno", "punto dos"]`): ahí las claves se
+deducen del propio texto del punto.
 
 ```json
 {"tipo":"repregunta","bloque":"Obligaciones","ref":"art. 1479 CC",
@@ -116,6 +139,11 @@ LISTA: Requisitos del acto jurídico [art. 1445]
 - consentimiento sin vicios
 - objeto lícito
 - causa lícita
+
+ALT: ¿Qué exige la resolución por incumplimiento?
+- Opera de pleno derecho
++ Sentencia judicial que la declare
+- Basta una carta del acreedor
 
 ART 1698: carga de la prueba
 TEXTO 1545: Todo contrato legalmente celebrado es una ley para los contratantes...

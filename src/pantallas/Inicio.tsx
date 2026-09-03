@@ -5,6 +5,10 @@ import { contarPendientes } from '../logica/cola'
 import { cargaDeHoy, formatearFecha } from '../logica/plan'
 import { generarConsejos } from '../logica/consejos'
 import { resumenDeItem } from '../logica/resumen'
+import { calcularRacha } from '../logica/racha'
+import { dominioGeneral, dominioPorBloque } from '../logica/dominio'
+import { Racha } from '../componentes/Racha'
+import { ListaDominio } from '../componentes/Dominio'
 
 export function Inicio() {
   const ajustes = useAjustes()
@@ -16,6 +20,12 @@ export function Inicio() {
   const revisiones = useRevisiones(curso?.id, 400)
 
   const cuentas = useMemo(() => contarPendientes(datos), [datos])
+  const racha = useMemo(
+    () => calcularRacha(revisiones, ajustes.metaDiaria),
+    [revisiones, ajustes.metaDiaria],
+  )
+  const bloques = useMemo(() => dominioPorBloque(datos), [datos])
+  const general = useMemo(() => dominioGeneral(datos), [datos])
   const plan = useMemo(() => cargaDeHoy(evaluaciones, datos), [evaluaciones, datos])
   const consejos = useMemo(
     () => generarConsejos({ datos, items, revisiones, estados: plan.estados, ajustes }),
@@ -61,6 +71,8 @@ export function Inicio() {
           </select>
         </label>
       )}
+
+      <Racha racha={racha} />
 
       <section className="seccion">
         <div className="titulo-seccion">
@@ -114,8 +126,29 @@ export function Inicio() {
           <a className="boton boton-fuerte boton-ancho" href="#/estudiar">
             {hoy > 0 ? 'Empezar la sesión de hoy' : 'Estudiar igual'}
           </a>
-          <a className="boton boton-ancho" href="#/estudiar?oral=1">Sesión oral</a>
+          <div className="grilla-dos">
+            <a className="boton boton-ancho" href="#/estudiar?oral=1">Sesión oral</a>
+            <a className="boton boton-ancho" href="#/ensayo">Rendir un ensayo</a>
+          </div>
         </div>
+      </section>
+
+      <hr className="filete" />
+
+      <section className="seccion">
+        <div className="titulo-seccion">
+          <h2>Cuánto dominas</h2>
+          <span className="lado numeral">{general.porcentaje}% del curso</span>
+        </div>
+        {bloques.length === 0 ? (
+          <p className="apunte">Todavía no hay materias con avance.</p>
+        ) : (
+          <ListaDominio bloques={bloques} />
+        )}
+        <p className="apunte" style={{ marginTop: '0.6rem' }}>
+          El porcentaje no cuenta lo que viste, sino cuánto aguanta cada cosa antes de que se te
+          olvide. Un ítem recién visto casi no suma.
+        </p>
       </section>
 
       {plan.estados.length > 0 && (
