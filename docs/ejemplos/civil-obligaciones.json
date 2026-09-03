@@ -1,0 +1,194 @@
+{
+  "recitar": 1,
+  "curso": "Civil — ejemplo",
+  "items": [
+    {
+      "tipo": "vf",
+      "bloque": "Obligaciones",
+      "ref": "art. 1489 CC",
+      "pregunta": "La condición resolutoria tácita opera de pleno derecho.",
+      "esVerdadera": false,
+      "justificacion": "No: requiere sentencia judicial. El art. 1489 le da al contratante diligente la opción de pedir el cumplimiento o la resolución, y esa opción se ejerce demandando.",
+      "hijos": [
+        {
+          "tipo": "repregunta",
+          "pregunta": "¿Y la condición resolutoria ordinaria?",
+          "respuesta": "Esa sí opera de pleno derecho: cumplido el hecho futuro e incierto, la obligación se extingue sin necesidad de declaración judicial.",
+          "ref": "art. 1479 CC"
+        },
+        {
+          "tipo": "repregunta",
+          "pregunta": "Entonces, ¿qué puede pedir el contratante diligente y con qué agregado?",
+          "respuesta": "A su arbitrio, el cumplimiento forzado o la resolución del contrato, en ambos casos con indemnización de perjuicios.",
+          "ref": "art. 1489 inc. 2 CC"
+        },
+        {
+          "tipo": "repregunta",
+          "pregunta": "¿En qué contratos va envuelta esta condición?",
+          "respuesta": "Solo en los bilaterales. En los unilaterales no hay obligaciones recíprocas que puedan quedar incumplidas por la contraparte.",
+          "ref": "art. 1489 inc. 1 CC"
+        }
+      ]
+    },
+    {
+      "tipo": "lista",
+      "bloque": "Acto jurídico",
+      "ref": "art. 1445 CC",
+      "titulo": "Requisitos para que una persona se obligue a otra por un acto o declaración de voluntad",
+      "articulo": "Art. 1445",
+      "elementos": [
+        "Que sea legalmente capaz",
+        "Que consienta en dicho acto o declaración y su consentimiento no adolezca de vicio",
+        "Que recaiga sobre un objeto lícito",
+        "Que tenga una causa lícita"
+      ],
+      "hijos": [
+        {
+          "tipo": "repregunta",
+          "pregunta": "¿Cuáles son los vicios del consentimiento?",
+          "respuesta": "Error, fuerza y dolo.",
+          "ref": "art. 1451 CC"
+        }
+      ]
+    },
+    {
+      "tipo": "lista",
+      "bloque": "Obligaciones",
+      "ref": "art. 1567 CC",
+      "titulo": "Modos de extinguir las obligaciones que enumera el art. 1567",
+      "articulo": "Art. 1567",
+      "elementos": [
+        "Solución o pago efectivo",
+        "Novación",
+        "Transacción",
+        "Remisión",
+        "Compensación",
+        "Confusión",
+        "Pérdida de la cosa que se debe",
+        "Declaración de nulidad o por la rescisión",
+        "Evento de la condición resolutoria",
+        "Prescripción"
+      ]
+    },
+    {
+      "tipo": "articulo",
+      "bloque": "Obligaciones",
+      "ref": "art. 1698 CC",
+      "numero": "1698",
+      "materia": "Carga de la prueba: incumbe probar las obligaciones o su extinción al que alega aquéllas o ésta",
+      "cuerpo": "Código Civil"
+    },
+    {
+      "tipo": "articulo",
+      "bloque": "Contratos",
+      "ref": "art. 1545 CC",
+      "numero": "1545",
+      "materia": "Ley del contrato: todo contrato legalmente celebrado es una ley para los contratantes",
+      "cuerpo": "Código Civil"
+    },
+    {
+      "tipo": "articulo",
+      "bloque": "Contratos",
+      "ref": "art. 1546 CC",
+      "numero": "1546",
+      "materia": "Los contratos deben ejecutarse de buena fe",
+      "cuerpo": "Código Civil"
+    },
+    {
+      "tipo": "textoLegal",
+      "bloque": "Contratos",
+      "ref": "art. 1545 CC",
+      "numero": "1545",
+      "textoLiteral": "Todo contrato legalmente celebrado es una ley para los contratantes, y no puede ser invalidado sino por su consentimiento mutuo o por causas legales."
+    },
+    {
+      "tipo": "textoLegal",
+      "bloque": "Contratos",
+      "ref": "art. 1560 CC",
+      "numero": "1560",
+      "textoLiteral": "Conocida claramente la intención de los contratantes, debe estarse a ella más que a lo literal de las palabras."
+    },
+    {
+      "tipo": "triaje",
+      "bloque": "Responsabilidad extracontractual",
+      "ref": "clase de responsabilidad",
+      "enunciado": "Refiérase a la discusión sobre si la culpa en materia extracontractual se aprecia en abstracto o en concreto.",
+      "verbo": "posturas"
+    },
+    {
+      "tipo": "triaje",
+      "bloque": "Obligaciones",
+      "ref": "clase de obligaciones",
+      "enunciado": "Señale qué es la obligación natural y qué la diferencia de la civil.",
+      "verbo": "distinciones"
+    },
+    {
+      "tipo": "desarrollo",
+      "bloque": "Responsabilidad extracontractual",
+      "ref": "arts. 2314 y ss. CC",
+      "enunciado": "Explique los elementos de la responsabilidad civil extracontractual.",
+      "minutosSugeridos": 12,
+      "checklist": [
+        "Capacidad delictual del autor",
+        "Hecho u omisión voluntaria del agente",
+        "Dolo o culpa (factor de imputación)",
+        "Daño",
+        "Relación de causalidad entre el hecho y el daño",
+        "Menciona el art. 2314 como fuente de la obligación de indemnizar"
+      ],
+      "hijos": [
+        {
+          "tipo": "repregunta",
+          "pregunta": "¿Desde qué edad se responde extracontractualmente?",
+          "respuesta": "Los menores de siete años y los dementes son absolutamente incapaces de delito o cuasidelito. Entre los siete y los dieciséis, queda a prudencia del juez determinar si obraron o no con discernimiento.",
+          "ref": "art. 2319 CC"
+        },
+        {
+          "tipo": "repregunta",
+          "pregunta": "¿Y quién responde por el incapaz?",
+          "respuesta": "Las personas a cuyo cargo esté, si puede imputárseles negligencia.",
+          "ref": "art. 2319 inc. 1 CC"
+        }
+      ]
+    },
+    {
+      "tipo": "desarrollo",
+      "bloque": "Obligaciones",
+      "ref": "art. 44 CC",
+      "enunciado": "Explique la graduación de la culpa en el Código Civil y para qué sirve.",
+      "minutosSugeridos": 10,
+      "checklist": [
+        "Culpa grave o lata: no manejar los negocios ajenos con el cuidado que aun las personas negligentes emplean en los suyos",
+        "La culpa grave equivale al dolo en materia civil",
+        "Culpa leve: falta de la diligencia que los hombres emplean ordinariamente en sus negocios propios",
+        "Culpa levísima: falta de la esmerada diligencia de un hombre juicioso",
+        "Sirve para determinar de qué culpa responde el deudor según a quién beneficia el contrato",
+        "Cita el art. 44 y el art. 1547"
+      ],
+      "hijos": [
+        {
+          "tipo": "repregunta",
+          "pregunta": "En un contrato que beneficia solo al acreedor, ¿de qué culpa responde el deudor?",
+          "respuesta": "De la culpa grave o lata, la menos exigente, porque el contrato no lo beneficia.",
+          "ref": "art. 1547 inc. 1 CC"
+        }
+      ]
+    },
+    {
+      "tipo": "vf",
+      "bloque": "Acto jurídico",
+      "ref": "art. 1682 CC",
+      "pregunta": "La nulidad absoluta puede sanearse por la ratificación de las partes.",
+      "esVerdadera": false,
+      "justificacion": "No puede sanearse por ratificación, solo por el transcurso de diez años. La relativa sí se sanea por ratificación y por cuatro años.",
+      "hijos": [
+        {
+          "tipo": "repregunta",
+          "pregunta": "¿Quién puede pedir la declaración de nulidad absoluta?",
+          "respuesta": "Todo el que tenga interés en ello, salvo el que ejecutó el acto sabiendo o debiendo saber el vicio; también el ministerio público en interés de la moral o de la ley, y el juez puede declararla de oficio cuando aparece de manifiesto en el acto o contrato.",
+          "ref": "art. 1683 CC"
+        }
+      ]
+    }
+  ]
+}
