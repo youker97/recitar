@@ -118,6 +118,8 @@ export type DatosItem =
   | DatosConcepto | DatosVF | DatosAlternativas | DatosLista | DatosArticulo | DatosTextoLegal
   | DatosTriaje | DatosDesarrollo | DatosRepregunta
 
+/** 'ejemplo' es del curso de demostración que ya no se instala; queda para
+ *  poder reconocer y borrar lo que haya quedado guardado de antes. */
 export type OrigenItem = 'manual' | 'json' | 'md' | 'txt' | 'pdf' | 'ejemplo'
 
 export interface Item {

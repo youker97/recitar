@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useUbicacion } from './rutas'
 import { useAjustes } from './datos/hooks'
-import { sembrarSiEstaVacio } from './datos/semilla'
+import { borrarElEjemplo } from './datos/limpieza'
 import { Inicio } from './pantallas/Inicio'
 import { Errores } from './pantallas/Errores'
 import { Material } from './pantallas/Material'
@@ -41,7 +41,7 @@ export default function App() {
   const [listo, setListo] = useState(false)
 
   useEffect(() => {
-    sembrarSiEstaVacio().finally(() => setListo(true))
+    borrarElEjemplo().finally(() => setListo(true))
   }, [])
 
   useEffect(() => {
