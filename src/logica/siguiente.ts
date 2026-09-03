@@ -85,6 +85,21 @@ export function proximaJugada(entrada: EntradaJugada): Jugada {
     if (pendiente !== -1) {
       const s = secciones[pendiente]
       const minutos = Math.max(5, Math.round((s.fin - s.inicio) / 900))
+      // Antes de leer, las palabras. Un tema con términos que no conoces no se
+      // lee, se decodifica, y la primera pasada se desperdicia.
+      const tienePalabras = datos.some(
+        (d) => d.item.tipo === 'concepto' && d.item.seccion
+          && normalizar(d.item.seccion) === normalizar(s.titulo),
+      )
+      if (!tienePalabras) {
+        return {
+          clave: `vocabulario-${f.id}-${pendiente}`,
+          titulo: `Antes de leer: las palabras de ${s.titulo}`,
+          texto: 'Marca cuáles no conoces. Son cinco minutos y hacen que la lectura sirva: leer con términos desconocidos no es estudiar.',
+          etiqueta: 'Ver el vocabulario',
+          ruta: `#/vocabulario?fuente=${f.id}&tema=${pendiente}`,
+        }
+      }
       return {
         clave: `pasada-${f.id}-${pendiente}`,
         titulo: `Te toca: ${s.titulo}`,

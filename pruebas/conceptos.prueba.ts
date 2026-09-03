@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { conceptosDeBloque, conceptosDeTexto, revisarVolcado } from '../src/logica/conceptos'
+import { conceptosDeBloque, conceptosDeTexto, presentar, revisarVolcado } from '../src/logica/conceptos'
 import { calibracion, prontitudEn, retrievabilidad } from '../src/logica/prontitud'
 import { progresoNuevo } from '../src/logica/programador'
 import type { Item, Revision } from '../src/datos/tipos'
@@ -83,6 +83,19 @@ describe('conceptos sacados del apunte, sin preguntas todavía', () => {
   it('toma las frases que se repiten, no las que aparecen una vez', () => {
     expect(terminos.some((t) => t.includes('bien juridico'))).toBe(true)
     expect(terminos.some((t) => t.includes('sujeto'))).toBe(true)
+  })
+
+  it('no ofrece un término que es pedazo de otro', () => {
+    // "bien juridico" y "bien juridico protegido" son lo mismo partido en dos:
+    // preguntar los dos no es vocabulario, es ruido.
+    for (const t of terminos) {
+      const contenido = terminos.some((otro) => otro !== t && otro.length > t.length && otro.includes(t))
+      expect(contenido, `"${t}" es pedazo de otro término`).toBe(false)
+    }
+  })
+
+  it('no corta las frases en una coma', () => {
+    expect(terminos.some((t) => t.includes(','))).toBe(false)
   })
 
   it('no toma frases de relleno', () => {
@@ -203,5 +216,24 @@ describe('calibración', () => {
     expect(creido.exceso).toBeGreaterThan(50)
     const justo = calibracion([revision('seguro', 'laTenia'), revision('seguro', 'laTenia')])
     expect(justo.exceso).toBe(0)
+  })
+})
+
+describe('cómo se muestra un término sacado del texto', () => {
+  it('baja los títulos que vienen gritados', () => {
+    expect(presentar('TEORIA DE LA ANTIJURIDICIDAD')).toBe('Teoria de la antijuridicidad')
+  })
+
+  it('le saca la numeración chilena del título', () => {
+    expect(presentar('II.- TEORIA DE LA ANTIJURIDICIDAD')).toBe('Teoria de la antijuridicidad')
+    expect(presentar('1.- Nocion y sentido')).toBe('Nocion y sentido')
+  })
+
+  it('no toca un término que ya se lee bien', () => {
+    expect(presentar('bien jurídico protegido')).toBe('bien jurídico protegido')
+  })
+
+  it('respeta las siglas dentro de una frase normal', () => {
+    expect(presentar('el tipo penal del CP')).toBe('el tipo penal del CP')
   })
 })

@@ -94,6 +94,20 @@ function validarItem(
     errores.push({ donde, mensaje: `falta "${campo}"${detalle ? ` ${detalle}` : ''}` })
 
   switch (tipo as TipoItem) {
+    case 'concepto': {
+      if (!esTexto(o.termino)) falta('termino')
+      if (!esTexto(o.definicion)) falta('definicion')
+      if (esTexto(o.termino) && esTexto(o.definicion)) {
+        const fuente = o.fuente
+        datos = {
+          termino: o.termino.trim(),
+          definicion: o.definicion.trim(),
+          contexto: esTexto(o.contexto) ? o.contexto.trim() : undefined,
+          fuente: fuente === 'apunte' || fuente === 'claude' || fuente === 'propia' ? fuente : 'claude',
+        }
+      }
+      break
+    }
     case 'vf': {
       if (!esTexto(o.pregunta)) falta('pregunta')
       if (typeof o.esVerdadera !== 'boolean') falta('esVerdadera', '(true o false, sin comillas)')

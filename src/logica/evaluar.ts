@@ -133,5 +133,5 @@ export function evaluarRespuesta(
 
 /** Los tipos que la app puede corregir sola, sin internet ni criterio humano. */
 export function seCorrigeSola(item: Item): boolean {
-  return item.tipo !== 'desarrollo' && item.tipo !== 'repregunta'
+  return item.tipo !== 'desarrollo' && item.tipo !== 'repregunta' && item.tipo !== 'concepto'
 }

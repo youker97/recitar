@@ -1,11 +1,12 @@
 import type {
-  DatosAlternativas, DatosArticulo, DatosDesarrollo, DatosLista, DatosRepregunta,
+  DatosAlternativas, DatosArticulo, DatosConcepto, DatosDesarrollo, DatosLista, DatosRepregunta,
   DatosTextoLegal, DatosTriaje, DatosVF, Item,
 } from '../datos/tipos'
 
 /** Una línea que identifica al ítem en listados. */
 export function resumenDeItem(item: Item): string {
   switch (item.tipo) {
+    case 'concepto': return (item.datos as DatosConcepto).termino
     case 'vf': return (item.datos as DatosVF).pregunta
     case 'alternativas': return (item.datos as DatosAlternativas).pregunta
     case 'lista': return (item.datos as DatosLista).titulo

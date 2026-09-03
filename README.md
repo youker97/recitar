@@ -56,6 +56,26 @@ Tres niveles, y los tres conviven:
 Verdadero/falso, alternativas, listas, artículos, texto legal y triaje se
 corrigen solos siempre, sin internet ni ayuda.
 
+### Vocabulario: primero las palabras
+
+Leer un tema con diez términos que no conoces no es estudiar, es decodificar
+ruido. Antes de la primera pasada, **Vocabulario** saca los términos del tema y
+te los pasa uno por uno: *la sé / más o menos / no la sé*. De las que dijiste
+saber te toma tres al azar y te las hace escribir, porque ahí es donde uno se
+engaña. Después:
+
+- Las que **el propio apunte define**, las resuelve sola: busca la frase
+  definitoria y te la muestra. Sin internet.
+- Las que el apunte da por sabidas van **todas juntas en un solo pedido** a
+  Claude, con las frases donde aparecen para que las defina en el sentido de
+  ese ramo. Una copiada y una pegada por tema, no una por palabra.
+- Cada definición queda marcada con su origen. Las que dedujo Claude te lo
+  dicen al estudiarlas: son las que hay que contrastar con tu profesor.
+
+Guardadas, se estudian como todo lo demás: te pregunta qué significa, de vez en
+cuando al revés (te da la definición y pides el término) y con la frase del
+apunte con la palabra tapada.
+
 Cada decisión de diseño responde a un hallazgo concreto sobre cómo se aprende:
 está explicado con sus fuentes en [docs/METODO.md](docs/METODO.md).
 
@@ -63,6 +83,7 @@ está explicado con sus fuentes en [docs/METODO.md](docs/METODO.md).
 
 | Modo | Qué entrena |
 |---|---|
+| Concepto | Vocabulario del ramo, en los dos sentidos y dentro de la frase del apunte |
 | Triaje | Identificar de qué es la pregunta y qué te pide, sin responderla |
 | Verdadero o falso | Justificar completo; la app revisa qué ideas trajiste |
 | Alternativas | Elegir entre distractores creíbles; las opciones se barajan entre repasos |
@@ -95,7 +116,10 @@ mapa**, así un apunte de 300 hojas no obliga a convertirlo entero de una.
    trozos si es largo), lo copias, lo pegas en Claude, y pegas su respuesta de
    vuelta. La app la valida antes de guardar. Nada sale de tu dispositivo salvo
    lo que tú pegues en otra parte.
-5. **Editor** para escribir o corregir ítems a mano, incluidas las repreguntas.
+5. **Vocabulario** (desde el mapa, en cada tema): marcas las palabras que no
+   sabes y quedan como ítems de estudio, con la definición del apunte o de
+   Claude.
+6. **Editor** para escribir o corregir ítems a mano, incluidas las repreguntas.
 
 En Ajustes hay **exportar todo** (material + avance en un archivo) y
 **restaurar**. Conviene hacerlo cada cierto tiempo: si borras los datos del

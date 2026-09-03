@@ -24,12 +24,17 @@ export function Mapa() {
   const [abierto, setAbierto] = useState<string | null>(null)
   const [pidiendo, setPidiendo] = useState<{ fuente: Fuente; indice: number } | null>(null)
 
+  // Las palabras del vocabulario se cuentan aparte: no son preguntas del tema,
+  // son el paso previo a poder leerlo.
   const porSeccion = useMemo(() => {
-    const mapa = new Map<string, number>()
+    const mapa = new Map<string, { preguntas: number; palabras: number }>()
     for (const i of items) {
       if (!i.seccion) continue
       const clave = normalizar(i.seccion)
-      mapa.set(clave, (mapa.get(clave) ?? 0) + 1)
+      const cuenta = mapa.get(clave) ?? { preguntas: 0, palabras: 0 }
+      if (i.tipo === 'concepto') cuenta.palabras++
+      else cuenta.preguntas++
+      mapa.set(clave, cuenta)
     }
     return mapa
   }, [items])
@@ -135,7 +140,8 @@ export function Mapa() {
                 <ul className="lista-limpia">
                   {secciones.map((s, i) => {
                     const dentro = i <= tope
-                    const cuantos = porSeccion.get(normalizar(s.titulo)) ?? 0
+                    const cuenta = porSeccion.get(normalizar(s.titulo)) ?? { preguntas: 0, palabras: 0 }
+                    const cuantos = cuenta.preguntas
                     return (
                       <li key={i} className="renglon renglon-acciones">
                         <div className="crece">
@@ -147,9 +153,19 @@ export function Mapa() {
                               ? 'Todavía no entra'
                               : s.cubierta ? 'Pasada hecha' : 'Falta la primera pasada'}
                             {cuantos > 0 ? ` · ${cuantos} preguntas` : ' · sin preguntas'}
+                            {cuenta.palabras > 0 ? ` · ${cuenta.palabras} palabras` : ''}
                           </div>
                         </div>
                         <div className="botonera">
+                          {dentro && (
+                            <button
+                              type="button"
+                              className="boton boton-chico"
+                              onClick={() => ir(`/vocabulario?fuente=${fuente.id}&tema=${i}`)}
+                            >
+                              Vocabulario
+                            </button>
+                          )}
                           {dentro && !s.cubierta && (
                             <button type="button" className="boton boton-chico boton-fuerte" onClick={() => ir(`/pasada?fuente=${fuente.id}`)}>
                               Pasada

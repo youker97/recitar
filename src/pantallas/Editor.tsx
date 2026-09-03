@@ -5,8 +5,10 @@ import { useCursoActivo, useItems } from '../datos/hooks'
 import { ir, useUbicacion } from '../rutas'
 import {
   NOMBRE_TIPO, NOMBRE_VERBO, TIPOS_ITEM,
-  type DatosAlternativas, type DatosArticulo, type DatosDesarrollo, type DatosLista, type DatosRepregunta,
-  type DatosTextoLegal, type DatosTriaje, type DatosVF, type Item, type TipoItem, type Verbo,
+  type DatosAlternativas, type DatosArticulo, type DatosConcepto, type DatosDesarrollo, type DatosLista,
+  type DatosRepregunta,
+  type DatosTextoLegal, type DatosTriaje, type DatosVF, type FuenteDefinicion, type Item, type TipoItem,
+  type Verbo,
 } from '../datos/tipos'
 import { validarPaquete } from '../datos/esquema'
 import { puntosDe } from '../logica/corrector'
@@ -41,6 +43,10 @@ interface Borrador {
   correcta: number
   explicacion: string
   claves: string
+  termino: string
+  definicion: string
+  contexto: string
+  fuenteDefinicion: FuenteDefinicion
 }
 
 const VACIO: Borrador = {
@@ -49,6 +55,7 @@ const VACIO: Borrador = {
   titulo: '', articulo: '', elementos: '', numero: '', materia: '', cuerpo: '',
   textoLiteral: '', enunciado: '', verbo: 'definir', checklist: '', minutosSugeridos: '',
   opciones: '', correcta: 0, explicacion: '', claves: '',
+  termino: '', definicion: '', contexto: '', fuenteDefinicion: 'propia',
 }
 
 function aBorrador(item: Item): Borrador {
@@ -100,6 +107,13 @@ function aBorrador(item: Item): Borrador {
       const v = d as unknown as DatosRepregunta
       return { ...b, pregunta: v.pregunta, respuesta: v.respuesta }
     }
+    case 'concepto': {
+      const v = d as unknown as DatosConcepto
+      return {
+        ...b, termino: v.termino, definicion: v.definicion,
+        contexto: v.contexto ?? '', fuenteDefinicion: v.fuente ?? 'propia',
+      }
+    }
     default: return b
   }
 }
@@ -149,6 +163,11 @@ function aBruto(b: Borrador): Record<string, unknown> {
       }
     case 'repregunta':
       return { ...base, pregunta: b.pregunta, respuesta: b.respuesta }
+    case 'concepto':
+      return {
+        ...base, termino: b.termino, definicion: b.definicion,
+        contexto: b.contexto || undefined, fuente: b.fuenteDefinicion,
+      }
     default:
       return base
   }
@@ -440,6 +459,39 @@ export function Editor() {
           <label className="campo">
             <span>Minutos sugeridos (opcional)</span>
             <input type="number" min={1} value={borrador.minutosSugeridos} onChange={(e) => cambiar('minutosSugeridos', e.target.value)} />
+          </label>
+        </>
+      )}
+
+      {t === 'concepto' && (
+        <>
+          <label className="campo">
+            <span>El término</span>
+            <input
+              type="text"
+              value={borrador.termino}
+              placeholder="enajenación"
+              onChange={(e) => cambiar('termino', e.target.value)}
+            />
+          </label>
+          <label className="campo">
+            <span>Qué significa, en este ramo</span>
+            <textarea className="serif" rows={4} value={borrador.definicion} onChange={(e) => cambiar('definicion', e.target.value)} />
+          </label>
+          <label className="campo">
+            <span>La frase del apunte donde aparece (opcional)</span>
+            <textarea className="serif" rows={3} value={borrador.contexto} onChange={(e) => cambiar('contexto', e.target.value)} />
+            <span className="apunte">
+              Con esto la app te la pregunta también dentro de la frase, con la palabra tapada.
+            </span>
+          </label>
+          <label className="campo">
+            <span>De dónde salió la definición</span>
+            <select value={borrador.fuenteDefinicion} onChange={(e) => cambiar('fuenteDefinicion', e.target.value as FuenteDefinicion)}>
+              <option value="apunte">Del apunte</option>
+              <option value="claude">De Claude</option>
+              <option value="propia">Mía</option>
+            </select>
           </label>
         </>
       )}
