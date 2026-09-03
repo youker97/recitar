@@ -289,6 +289,8 @@ export interface Ajustes {
   mostrarConsejos: boolean
   /** Las repreguntas se responden hablando (como en el oral) o tecleando. */
   repreguntasHabladas: boolean
+  /** La primera pasada va por trozos chicos en vez de por tema completo. */
+  pasadaProfunda: boolean
 }
 
 export const AJUSTES_POR_DEFECTO: Ajustes = {
@@ -302,4 +304,5 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   tamanoTexto: 'normal',
   mostrarConsejos: true,
   repreguntasHabladas: true,
+  pasadaProfunda: false,
 }

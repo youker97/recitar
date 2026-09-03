@@ -475,3 +475,24 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 .pagina-chip[aria-pressed='true'] { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
 .pagina-vacia { opacity: 0.45; font-style: italic; }
 .pagina-hallada { box-shadow: inset 0 -3px 0 var(--rojo); }
+
+/* ---------- filas con muchas acciones (mapa) ---------- */
+
+/* Con cuatro botones al lado del título, en un teléfono el título se aplasta
+   hasta quedar una palabra por línea. En pantalla angosta van debajo. */
+@media (max-width: 34rem) {
+  .renglon-acciones { display: block; }
+  .renglon-acciones .botonera { margin-top: 0.5rem; }
+}
+.renglon-acciones .crece { min-width: 0; }
+.renglon-acciones .botonera { flex-wrap: wrap; }
+
+.marco a, .marco button { max-width: 100%; }
+
+/* ---------- lectura de un apunte ---------- */
+
+.lectura { margin: 0.75rem 0 1rem; }
+.lectura p { margin: 0 0 0.9rem; hyphens: auto; }
+/* Justificar en un teléfono abre huecos enormes entre palabras. */
+@media (min-width: 40rem) { .lectura p { text-align: justify; } }
+.lectura p:first-child { margin-top: 0; }

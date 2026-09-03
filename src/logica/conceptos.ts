@@ -10,6 +10,7 @@ import type {
 } from '../datos/tipos'
 import { clavesDe, puntosDe } from './corrector'
 import { contiene, normalizar } from './comparar'
+import { detectarSecciones } from './mapa'
 
 export interface Concepto {
   termino: string
@@ -72,6 +73,105 @@ export function conceptosDeBloque(items: Item[]): Concepto[] {
     }
   }
   return salida
+}
+
+// Palabras que en un apunte de Derecho aparecen en todas partes y no
+// distinguen nada.
+const HUECAS = new Set([
+  'manera', 'forma', 'caso', 'casos', 'modo', 'parte', 'partes', 'tal', 'asi',
+  'cual', 'cuales', 'decir', 'ejemplo', 'sentido', 'materia', 'punto', 'trata',
+  'refiere', 'existe', 'existen', 'aparece', 'concurre', 'concurren', 'permite',
+  'consiste', 'requiere', 'exige', 'supone', 'comprende', 'contiene', 'resulta',
+  'realiza', 'produce', 'ocurre', 'segundo', 'primero', 'ultimo', 'siguiente',
+  'general', 'mismo', 'misma', 'propio', 'propia', 'toda', 'todo', 'cada',
+  'entre', 'sobre', 'hacia', 'desde', 'durante', 'mediante', 'segun', 'contra',
+])
+
+interface Palabra {
+  texto: string
+  clave: string
+  inicio: number
+  fin: number
+  contenido: boolean
+}
+
+function palabrasDe(texto: string): Palabra[] {
+  const salida: Palabra[] = []
+  const patron = /[\p{L}\p{N}]+/gu
+  let m: RegExpExecArray | null
+  while ((m = patron.exec(texto)) !== null) {
+    const clave = normalizar(m[0])
+    salida.push({
+      texto: m[0],
+      clave,
+      inicio: m.index,
+      fin: m.index + m[0].length,
+      contenido: clave.length >= 4 && !HUECAS.has(clave) && !/^\d+$/.test(clave),
+    })
+  }
+  return salida
+}
+
+/**
+ * Conceptos sacados directamente de un apunte, para cuando todavía no hay
+ * preguntas generadas.
+ *
+ * Un concepto de verdad se repite: "principio de legalidad" aparece cinco
+ * veces en el capítulo, "comprende actualmente" una sola. Por eso se buscan
+ * las frases que vuelven, más los títulos de los temas, que casi siempre son
+ * el nombre exacto de la institución.
+ */
+export function conceptosDeTexto(texto: string, bloque = '', ref = ''): Concepto[] {
+  const salida: Concepto[] = []
+  const vistos = new Set<string>()
+
+  const agregar = (termino: string) => {
+    const clave = normalizar(termino)
+    if (!clave || clave.length < 6 || vistos.has(clave)) return
+    vistos.add(clave)
+    salida.push({ termino, itemId: '', ref, bloque })
+  }
+
+  // 1. Los títulos de los temas, sin su numeración.
+  for (const seccion of detectarSecciones(texto)) {
+    const limpio = seccion.titulo
+      .replace(/^\s*(?:\d{1,2}(?:\.\d{1,2})*|[IVXLCDM]{1,7}|[a-zA-Z])\s*[.)\-–]+\s*/, '')
+      .replace(/[.:]$/, '')
+      .trim()
+    if (limpio.split(/\s+/).length <= 8 && /\p{L}/u.test(limpio)) agregar(limpio)
+  }
+
+  // 2. Las frases de dos y tres palabras que se repiten.
+  const palabras = palabrasDe(texto)
+  const cuenta = new Map<string, { forma: string; veces: number }>()
+  for (let i = 0; i < palabras.length; i++) {
+    if (!palabras[i].contenido) continue
+    for (const largo of [2, 3]) {
+      const fin = i + largo - 1
+      if (fin >= palabras.length) continue
+      if (!palabras[fin].contenido) continue
+      // A lo más una palabra vacía intercalada ("bien jurídico protegido").
+      const huecas = palabras.slice(i, fin + 1).filter((p) => !p.contenido).length
+      if (huecas > 1) continue
+      const forma = texto.slice(palabras[i].inicio, palabras[fin].fin)
+      if (/[\n.;:!?]/.test(forma)) continue
+      const clave = normalizar(forma)
+      if (clave.length < 10) continue
+      const previo = cuenta.get(clave)
+      if (previo) previo.veces++
+      else cuenta.set(clave, { forma, veces: 1 })
+    }
+  }
+
+  const minimo = texto.length > 20000 ? 4 : texto.length > 6000 ? 3 : 2
+  const frecuentes = [...cuenta.values()]
+    .filter((x) => x.veces >= minimo)
+    .sort((a, b) => b.veces - a.veces || b.forma.length - a.forma.length)
+    .slice(0, 40)
+
+  for (const f of frecuentes) agregar(f.forma)
+
+  return salida.slice(0, 45)
 }
 
 export interface ResultadoVolcado {

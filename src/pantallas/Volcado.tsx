@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { db, nuevoId } from '../datos/db'
-import { useCursoActivo, useItems } from '../datos/hooks'
-import { conceptosDeBloque, revisarVolcado, type Concepto } from '../logica/conceptos'
+import { useCursoActivo, useFuentes, useItems } from '../datos/hooks'
+import { conceptosDeBloque, conceptosDeTexto, revisarVolcado, type Concepto } from '../logica/conceptos'
 import { contarPalabras } from '../logica/corrector'
 import { Cronometro, useCronometro } from '../componentes/Cronometro'
 import { ir, useUbicacion } from '../rutas'
@@ -17,20 +17,34 @@ export function Volcado() {
   const { params } = useUbicacion()
   const curso = useCursoActivo()
   const items = useItems(curso?.id)
+  const fuentes = useFuentes(curso?.id)
   const [bloque, setBloque] = useState(params.get('bloque') ?? '')
   const [paso, setPaso] = useState<Paso>(params.get('bloque') ? 'escribiendo' : 'elegir')
   const [texto, setTexto] = useState('')
   const reloj = useCronometro(false)
 
+  // Las materias salen de las preguntas y también de los apuntes: se puede
+  // hacer un volcado apenas se importa el texto, sin haber generado nada.
   const bloques = useMemo(
-    () => [...new Set(items.map((i) => i.bloque).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
-    [items],
+    () => [...new Set([
+      ...items.map((i) => i.bloque),
+      ...fuentes.map((f) => f.bloque),
+    ].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
+    [items, fuentes],
   )
 
-  const conceptos = useMemo(
-    () => conceptosDeBloque(items.filter((i) => i.bloque === bloque)),
-    [items, bloque],
+  const conceptosDe = useMemo(
+    () => (b: string): Concepto[] => {
+      const delMaterial = conceptosDeBloque(items.filter((i) => i.bloque === b))
+      if (delMaterial.length > 0) return delMaterial
+      return fuentes
+        .filter((f) => f.bloque === b)
+        .flatMap((f) => conceptosDeTexto(f.texto, b, f.titulo))
+    },
+    [items, fuentes],
   )
+
+  const conceptos = useMemo(() => conceptosDe(bloque), [conceptosDe, bloque])
 
   const resultado = useMemo(
     () => (paso === 'informe' ? revisarVolcado(texto, conceptos) : null),
@@ -73,7 +87,7 @@ export function Volcado() {
         ) : (
           <div className="opciones seccion">
             {bloques.map((b) => {
-              const cuantos = conceptosDeBloque(items.filter((i) => i.bloque === b)).length
+              const cuantos = conceptosDe(b).length
               return (
                 <button
                   key={b}

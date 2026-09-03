@@ -247,10 +247,29 @@ export function Sesion() {
   }
 
   if (datos && datos.length === 0) {
+    // Tener el apunte cargado no es lo mismo que tener preguntas: hay que
+    // decirlo, o parece que la importación no hizo nada.
+    const hayApuntes = fuentes.length > 0
     return (
       <div className="vacio">
-        <p>Este curso no tiene material todavía.</p>
-        <a className="boton boton-fuerte" href="#/importar">Meter material</a>
+        {hayApuntes ? (
+          <>
+            <p>Tienes apuntes cargados, pero todavía no hay preguntas que repasar.</p>
+            <p className="apunte">
+              Dale la primera pasada a un tema, o pídele a Claude las preguntas de ese tema desde el
+              mapa.
+            </p>
+            <div className="botonera-columna">
+              <a className="boton boton-fuerte" href="#/pasada">Primera pasada</a>
+              <a className="boton" href="#/mapa">Ver el mapa</a>
+            </div>
+          </>
+        ) : (
+          <>
+            <p>Este curso no tiene material todavía.</p>
+            <a className="boton boton-fuerte" href="#/importar">Meter material</a>
+          </>
+        )}
       </div>
     )
   }
