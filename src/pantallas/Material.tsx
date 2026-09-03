@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { useCursoActivo, useCursos, useItems } from '../datos/hooks'
-import { guardarAjustes } from '../datos/db'
+import { useCursoActivo, useCursos, useFuentes, useItems } from '../datos/hooks'
+import { db, guardarAjustes } from '../datos/db'
 import { borrarCurso, borrarItem, crearCurso, guardarItem, reiniciarProgreso } from '../datos/repos'
 import { resumenDeItem } from '../logica/resumen'
 import { NOMBRE_TIPO, type Item } from '../datos/tipos'
@@ -23,6 +23,7 @@ export function Material() {
   const cursos = useCursos()
   const curso = useCursoActivo()
   const items = useItems(curso?.id)
+  const fuentes = useFuentes(curso?.id)
   const [busqueda, setBusqueda] = useState('')
   const [nombreNuevo, setNombreNuevo] = useState('')
 
@@ -53,7 +54,7 @@ export function Material() {
     <div>
       <div className="titulo-seccion">
         <h1>Material</h1>
-        <span className="lado numeral">{items.length} ítems</span>
+        <span className="lado numeral">{cursos.length} {cursos.length === 1 ? 'curso' : 'cursos'}</span>
       </div>
 
       <div className="grilla-dos seccion">
@@ -83,8 +84,60 @@ export function Material() {
       </div>
 
       <div className="botonera seccion">
-        <a className="boton boton-fuerte" href="#/editor">Escribir un ítem</a>
-        <a className="boton" href="#/importar">Importar archivo</a>
+        <a className="boton boton-fuerte" href="#/importar">Importar apuntes</a>
+        <a className="boton" href="#/editor">Escribir un ítem</a>
+      </div>
+
+      <section className="seccion">
+        <div className="titulo-seccion">
+          <h2>Apuntes</h2>
+          <span className="lado numeral">{fuentes.length}</span>
+        </div>
+        {fuentes.length === 0 ? (
+          <p className="apunte">
+            Todavía no hay apuntes en este curso. Puedes importar varios archivos de una vez.
+          </p>
+        ) : (
+          <ul className="lista-limpia">
+            {fuentes.map((f) => {
+              const secciones = f.secciones ?? []
+              const cubiertas = secciones.filter((x) => x.cubierta).length
+              return (
+                <li key={f.id} className="renglon">
+                  <div className="crece">
+                    <div className="estudio" style={{ fontSize: '1.02rem' }}>{f.titulo}</div>
+                    <div className="apunte">
+                      {f.bloque} · {secciones.length} temas · {cubiertas} con la pasada hecha ·{' '}
+                      {Math.round(f.texto.length / 1000)} mil caracteres
+                    </div>
+                  </div>
+                  <div className="botonera">
+                    <button type="button" className="boton boton-chico" onClick={() => ir('/mapa')}>Temas</button>
+                    <button type="button" className="boton boton-chico" onClick={() => ir(`/pasada?fuente=${f.id}`)}>Pasada</button>
+                    <button
+                      type="button"
+                      className="boton boton-chico boton-peligro"
+                      onClick={() => {
+                        if (window.confirm(`¿Borrar el apunte “${f.titulo}”? Las preguntas que ya generaste no se borran.`)) {
+                          db.fuentes.delete(f.id)
+                        }
+                      }}
+                    >
+                      Borrar
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
+
+      <hr className="filete" />
+
+      <div className="titulo-seccion">
+        <h2>Preguntas</h2>
+        <span className="lado numeral">{items.filter((i) => !i.padreId).length}</span>
       </div>
 
       <label className="campo">

@@ -77,11 +77,19 @@ está explicado con sus fuentes en [docs/METODO.md](docs/METODO.md).
 
 ## Cómo meter material
 
+Se pueden elegir **varios archivos de una vez** (los PDF y apuntes de un ramo
+entero). Cada archivo queda como un apunte aparte, con su propio tema, y primero
+se guarda como **material**: el texto entra a la app para darle la primera pasada
+y hacer volcados. Las preguntas se generan después, **tema por tema, desde el
+mapa**, así un apunte de 300 hojas no obliga a convertirlo entero de una.
+
 1. **Paquete `.json`** con el formato de [docs/ESQUEMA-IMPORTACION.md](docs/ESQUEMA-IMPORTACION.md).
    Si viene malo, la app dice exactamente qué ítem y qué campo, y no guarda nada.
 2. **Apuntes `.md` o `.txt`** con marcas simples (`V:`, `J:`, `LISTA:`, `ART`,
    `TEXTO`, `DES:`, `TRIAJE(...)`, `?` y `=`). Se convierten sin internet.
-3. **PDF**: la app extrae el texto con pdf.js y tú eliges qué páginas usar.
+3. **PDF**: la app extrae el texto con pdf.js y eliges qué páginas usar, por
+   rango (`desde` / `hasta`), buscando un tema dentro del archivo, o tocando
+   páginas sueltas en una grilla compacta.
 4. **El puente con Claude**, que es lo que mejor funciona con un apunte normal:
    la app arma sola el pedido (instrucciones + formato + tu texto, partido en
    trozos si es largo), lo copias, lo pegas en Claude, y pegas su respuesta de
