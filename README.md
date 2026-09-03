@@ -125,6 +125,29 @@ En Ajustes hay **exportar todo** (material + avance en un archivo) y
 **restaurar**. Conviene hacerlo cada cierto tiempo: si borras los datos del
 navegador, se pierde.
 
+## Cómo se ve
+
+Negro, blanco y el dorado de las estrellas: la paleta es de Colo-Colo. El
+escudo de la cinta lleva la banda de la camiseta, la cinta tiene la franja
+diagonal al 3%, y al pie de la pantalla de hoy va un detalle que cambia cada
+día (las tres estrellas del 91, el 14, la copa, el Cacique).
+
+Manda la lectura, no el adorno:
+
+- El dorado es acento, nunca fondo de un párrafo, y hay **una sola** acción
+  dorada por pantalla. Donde una lista tiene una acción recomendada por fila,
+  va dorada de contorno: si fueran todas rellenas, el dorado dejaría de
+  significar algo.
+- El negro del tema oscuro no es negro puro. El texto blanco sobre negro
+  absoluto "vibra" en pantallas OLED y cansa a los diez minutos.
+- Todo el texto pasa el mínimo de contraste (4.5:1; 3:1 en los títulos
+  grandes), medido en los dos temas.
+- En **Ajustes** eliges tema claro, oscuro o el del teléfono, y puedes poner
+  **tu propia foto** como escudo: se achica a 256 px y se guarda en tu
+  dispositivo, no sale a ninguna parte. Los dibujos de la app son propios; no
+  trae fotos de nadie, entre otras cosas porque una imagen traída de internet
+  dejaría un hueco justo cuando no hay señal.
+
 ## Instalarla en el teléfono
 
 Abre la app en el navegador y usa "Agregar a la pantalla de inicio"

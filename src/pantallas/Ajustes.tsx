@@ -3,6 +3,8 @@ import { db, guardarAjustes } from '../datos/db'
 import { useAjustes, useCursoActivo } from '../datos/hooks'
 import { INTERVALOS_LEITNER } from '../logica/programador'
 import { exportarTodo, descargar, restaurarDesde } from '../importar/respaldo'
+import { aEscudo } from '../logica/imagen'
+import { Escudo } from '../componentes/Identidad'
 
 export function Ajustes() {
   const ajustes = useAjustes()
@@ -170,6 +172,67 @@ export function Ajustes() {
 
       <section className="seccion">
         <h2>Aspecto</h2>
+        <label className="campo">
+          <span>Tema</span>
+          <select
+            value={ajustes.tema}
+            onChange={(e) => guardarAjustes({ tema: e.target.value as 'auto' | 'claro' | 'oscuro' })}
+          >
+            <option value="auto">Como el teléfono</option>
+            <option value="claro">Claro (papel)</option>
+            <option value="oscuro">Oscuro</option>
+          </select>
+          <span className="apunte">
+            Para leer de noche, oscuro; con luz de día, claro se lee mejor.
+          </span>
+        </label>
+
+        <div className="campo">
+          <span>Escudo</span>
+          <div className="renglon" style={{ borderBottom: 0, paddingTop: 0 }}>
+            {ajustes.escudo
+              ? <img className="emblema" src={ajustes.escudo} alt="" style={{ width: 44, height: 44 }} />
+              : <Escudo tamano={44} />}
+            <div className="crece">
+              <span className="apunte">
+                Sale en la cinta de arriba y de marca de agua en la tarjeta de hoy. Pon la foto que
+                quieras: se guarda en este teléfono, achicada, y no sale a ninguna parte.
+              </span>
+            </div>
+          </div>
+          <div className="botonera">
+            <label className="boton boton-chico" style={{ cursor: 'pointer' }}>
+              {ajustes.escudo ? 'Cambiar la foto' : 'Poner una foto'}
+              <input
+                type="file"
+                accept="image/*"
+                className="oculto-visual"
+                onChange={async (e) => {
+                  const archivo = e.target.files?.[0]
+                  e.target.value = ''
+                  if (!archivo) return
+                  setError(null)
+                  try {
+                    await guardarAjustes({ escudo: await aEscudo(archivo) })
+                    setMensaje('Escudo guardado.')
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'No se pudo usar esa imagen.')
+                  }
+                }}
+              />
+            </label>
+            {ajustes.escudo && (
+              <button
+                type="button"
+                className="boton boton-chico boton-peligro"
+                onClick={() => guardarAjustes({ escudo: undefined })}
+              >
+                Sacarla
+              </button>
+            )}
+          </div>
+        </div>
+
         <label className="campo">
           <span>Tamaño del texto</span>
           <select

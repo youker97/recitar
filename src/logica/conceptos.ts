@@ -10,7 +10,7 @@ import type {
 } from '../datos/tipos'
 import { clavesDe, puntosDe } from './corrector'
 import { contiene, normalizar } from './comparar'
-import { detectarSecciones } from './mapa'
+import { detectarSecciones, presentar } from './mapa'
 
 export interface Concepto {
   termino: string
@@ -121,22 +121,6 @@ function palabrasDe(texto: string): Palabra[] {
     })
   }
   return salida
-}
-
-/**
- * Un término sacado del texto se muestra como se lee, no como venía: sin la
- * numeración del título y sin los TÍTULOS EN MAYÚSCULAS, que gritan.
- */
-export function presentar(termino: string): string {
-  const sinNumeracion = termino
-    .replace(/^\s*(?:\d{1,2}(?:\.\d{1,2})*|[IVXLCDM]{1,7}|[a-zA-Z])\s*[.)\-–]{1,3}\s*/, '')
-    .replace(/[.:;,]$/, '')
-    .trim()
-  if (!sinNumeracion) return termino.trim()
-  const letras = sinNumeracion.replace(/[^\p{L}]/gu, '')
-  const grita = letras.length > 3 && letras === letras.toUpperCase()
-  if (!grita) return sinNumeracion
-  return sinNumeracion[0].toUpperCase() + sinNumeracion.slice(1).toLowerCase()
 }
 
 /**

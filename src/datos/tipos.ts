@@ -298,6 +298,10 @@ export interface Ajustes {
   metaDiaria: number
   nuevosPorDia: number
   tamanoTexto: 'normal' | 'grande'
+  /** 'auto' sigue al teléfono; los otros mandan sobre él. */
+  tema: 'auto' | 'claro' | 'oscuro'
+  /** Foto propia para el escudo de la cinta, guardada como data URL chica. */
+  escudo?: string
   cursoActivoId?: string
   mostrarConsejos: boolean
   /** Las repreguntas se responden hablando (como en el oral) o tecleando. */
@@ -321,6 +325,7 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   metaDiaria: 15,
   nuevosPorDia: 20,
   tamanoTexto: 'normal',
+  tema: 'auto',
   mostrarConsejos: true,
   repreguntasHabladas: true,
   pasadaProfunda: false,

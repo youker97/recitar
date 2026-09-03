@@ -5,7 +5,7 @@ import { useCursoActivo, useCursos, useFuentes, useItems } from '../datos/hooks'
 import { guardarAjustes } from '../datos/db'
 import type { Fuente, SeccionApunte } from '../datos/tipos'
 import { mapaDe } from './Pasada'
-import { detectarSecciones, textoDeSeccion } from '../logica/mapa'
+import { detectarSecciones, presentar, textoDeSeccion } from '../logica/mapa'
 import { normalizar } from '../logica/comparar'
 import { aItems, validarPaquete } from '../datos/esquema'
 import { armarPedido, copiar, limpiarRespuesta, partirTexto } from '../importar/claude'
@@ -146,7 +146,7 @@ export function Mapa() {
                       <li key={i} className="renglon renglon-acciones">
                         <div className="crece">
                           <div className={dentro ? 'estudio' : 'estudio tenue'} style={{ fontSize: '1.02rem' }}>
-                            {s.titulo}
+                            {presentar(s.titulo)}
                           </div>
                           <div className="apunte">
                             {!dentro
@@ -167,7 +167,7 @@ export function Mapa() {
                             </button>
                           )}
                           {dentro && !s.cubierta && (
-                            <button type="button" className="boton boton-chico boton-fuerte" onClick={() => ir(`/pasada?fuente=${fuente.id}`)}>
+                            <button type="button" className="boton boton-chico boton-guia" onClick={() => ir(`/pasada?fuente=${fuente.id}`)}>
                               Pasada
                             </button>
                           )}
@@ -261,7 +261,7 @@ function PedirPreguntas({
   return (
     <div className="hoja hoja-aviso">
       <div className="titulo-seccion">
-        <h3>Preguntas de “{seccion.titulo}”</h3>
+        <h3>Preguntas de “{presentar(seccion.titulo)}”</h3>
         <button type="button" className="boton boton-chico" onClick={onCerrar}>Cerrar</button>
       </div>
 

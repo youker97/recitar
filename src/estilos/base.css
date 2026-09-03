@@ -18,7 +18,7 @@ body {
   color: var(--tinta);
   font-family: var(--sans);
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1.55;
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
 }
@@ -29,8 +29,8 @@ body {
 }
 
 h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0 0 0.5rem; }
-h1 { font-size: 1.35rem; letter-spacing: -0.01em; }
-h2 { font-size: 1.1rem; }
+h1 { font-size: 1.5rem; letter-spacing: -0.015em; }
+h2 { font-size: 1.15rem; letter-spacing: -0.01em; }
 h3 { font-size: 1rem; }
 p { margin: 0 0 0.75rem; }
 a { color: var(--azul); }
@@ -47,10 +47,24 @@ a { color: var(--azul); }
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--papel);
+  background: color-mix(in srgb, var(--papel-hondo) 88%, transparent);
+  backdrop-filter: saturate(150%) blur(12px);
+  -webkit-backdrop-filter: saturate(150%) blur(12px);
   border-bottom: 1px solid var(--linea);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--oro-vivo) 30%, transparent);
   padding-top: env(safe-area-inset-top);
+  overflow: hidden;
 }
+
+/* La franja diagonal de la camiseta, al 3%: se siente, no se ve. */
+.cinta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(135deg, transparent 0 20px, var(--franja) 20px 23px);
+  pointer-events: none;
+}
+.cinta-dentro { position: relative; }
 
 .cinta-dentro {
   max-width: var(--ancho);
@@ -62,15 +76,18 @@ a { color: var(--azul); }
 }
 
 .marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
   font-family: var(--serif);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-decoration: none;
   color: var(--tinta);
 }
 
-.marca span { color: var(--rojo); }
+.marca span { color: var(--oro-vivo); }
 
 @media (max-width: 32rem) {
   .cinta-dentro { flex-wrap: wrap; row-gap: 0.4rem; }
@@ -86,15 +103,35 @@ a { color: var(--azul); }
 }
 .cinta nav::-webkit-scrollbar { display: none; }
 
+.cinta nav {
+  gap: 0.25rem;
+  /* Las secciones no caben en un teléfono: el degradado del borde avisa que
+     hay más a la derecha en vez de dejarlas cortadas de golpe. */
+  -webkit-mask-image: linear-gradient(to right, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 82%, transparent 100%);
+  padding-right: 0.75rem;
+}
+@media (max-width: 32rem) {
+  .cinta nav a { padding: 0.28rem 0.5rem; font-size: 0.8rem; }
+}
+
 .cinta nav a {
-  font-size: 0.83rem;
-  color: var(--tinta-suave);
+  font-size: 0.84rem;
+  color: var(--tinta-tenue);
   text-decoration: none;
   white-space: nowrap;
-  padding-bottom: 2px;
-  border-bottom: 2px solid transparent;
+  padding: 0.3rem 0.62rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: color 120ms linear, background 120ms linear;
 }
-.cinta nav a[aria-current='page'] { color: var(--tinta); border-bottom-color: var(--rojo); }
+.cinta nav a:hover { color: var(--tinta); }
+.cinta nav a[aria-current='page'] {
+  color: var(--oro);
+  background: color-mix(in srgb, var(--oro-vivo) 14%, transparent);
+  border-color: color-mix(in srgb, var(--oro-vivo) 32%, transparent);
+  font-weight: 600;
+}
 
 .seccion { margin: 1.5rem 0; }
 
@@ -103,23 +140,43 @@ a { color: var(--azul); }
   align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
-  border-bottom: 2px solid var(--tinta);
-  padding-bottom: 0.25rem;
-  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--linea);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.85rem;
 }
-.titulo-seccion h2 { margin: 0; }
+.titulo-seccion h1,
+.titulo-seccion h2,
+.seccion > h2 {
+  margin: 0 0 0.5rem;
+  position: relative;
+  padding-left: 0.7rem;
+}
+.titulo-seccion h1, .titulo-seccion h2 { margin-bottom: 0; }
+.titulo-seccion h1::before,
+.titulo-seccion h2::before,
+.seccion > h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.16em;
+  bottom: 0.16em;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--oro-vivo);
+}
 .titulo-seccion .lado { font-size: 0.8rem; color: var(--tinta-tenue); }
 
 .filete { border: 0; border-top: 1px solid var(--linea); margin: 1.25rem 0; }
 
 /* ---------- textos ---------- */
 
-.estudio { font-family: var(--serif); font-size: 1.18rem; line-height: 1.55; }
+.estudio { font-family: var(--serif); font-size: 1.2rem; line-height: 1.65; }
 .estudio-grande { font-family: var(--serif); font-size: 1.35rem; line-height: 1.45; }
-.apunte { font-size: 0.82rem; color: var(--tinta-tenue); }
+.apunte { font-size: 0.84rem; line-height: 1.5; color: var(--tinta-tenue); }
 .ref { font-family: var(--mono); font-size: 0.74rem; color: var(--tinta-tenue); letter-spacing: 0.01em; }
 .tenue { color: var(--tinta-tenue); }
 .rojo { color: var(--rojo); }
+.oro { color: var(--oro); }
 .verde { color: var(--verde); }
 .centrado { text-align: center; }
 .numeral { font-variant-numeric: tabular-nums; }
@@ -138,29 +195,51 @@ button, input, textarea, select { font: inherit; color: inherit; }
   background: var(--papel-alto);
   color: var(--tinta);
   border: 1px solid var(--linea-fuerte);
-  border-radius: 2px;
+  border-radius: var(--curva-chica);
   cursor: pointer;
   font-size: 0.95rem;
+  font-weight: 500;
   text-decoration: none;
-  transition: background 90ms linear;
+  transition: background 120ms linear, border-color 120ms linear, transform 90ms ease;
 }
-.boton:hover:not(:disabled) { background: var(--papel-hondo); }
-.boton:disabled { opacity: 0.45; cursor: not-allowed; }
+.boton:hover:not(:disabled) { background: var(--papel-realce); border-color: var(--tinta-tenue); }
+.boton:disabled { opacity: 0.5; cursor: not-allowed; }
+.boton-fuerte:disabled {
+  opacity: 1;
+  background: var(--papel-realce);
+  color: var(--tinta-tenue);
+  border-color: var(--linea);
+  box-shadow: none;
+}
 
+/* La acción principal va en dorado: una sola por pantalla, y se ve sola. */
 .boton-fuerte {
-  background: var(--tinta);
-  color: var(--papel);
-  border-color: var(--tinta);
+  background: var(--oro-vivo);
+  color: var(--sobre-oro);
+  border-color: color-mix(in srgb, var(--oro-vivo) 70%, #000);
+  font-weight: 600;
 }
-.boton-fuerte:hover:not(:disabled) { background: #000; }
-@media (prefers-color-scheme: dark) {
-  .boton-fuerte:hover:not(:disabled) { background: #fff; }
+.boton-fuerte:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--oro-vivo) 88%, #fff);
+  border-color: var(--oro-vivo);
 }
 
 .boton-plano { background: none; border-color: transparent; text-decoration: underline; padding-inline: 0.3rem; }
+/* Para listas donde hay una acción recomendada por fila: si fueran todas
+   doradas rellenas, el dorado dejaría de significar algo. */
+.boton-guia {
+  color: var(--oro);
+  border-color: color-mix(in srgb, var(--oro-vivo) 55%, transparent);
+  background: color-mix(in srgb, var(--oro-vivo) 10%, transparent);
+  font-weight: 600;
+}
+.boton-guia:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--oro-vivo) 20%, transparent);
+  border-color: var(--oro-vivo);
+}
 .boton-peligro { color: var(--rojo); border-color: var(--rojo); background: none; }
 .boton-ancho { width: 100%; }
-.boton-chico { min-height: 2.1rem; padding: 0.25rem 0.55rem; font-size: 0.82rem; }
+.boton-chico { min-height: 2.1rem; padding: 0.25rem 0.62rem; font-size: 0.82rem; border-radius: 999px; }
 
 .botonera { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .botonera-columna { display: grid; gap: 0.5rem; }
@@ -173,8 +252,11 @@ input[type='text'], input[type='date'], input[type='number'], textarea, select {
   padding: 0.55rem 0.6rem;
   background: var(--papel-alto);
   border: 1px solid var(--linea-fuerte);
-  border-radius: 2px;
+  border-radius: var(--curva-chica);
   min-height: 2.75rem;
+}
+input[type='text']:focus, input[type='number']:focus, textarea:focus, select:focus {
+  border-color: var(--oro-vivo);
 }
 textarea { min-height: 6rem; resize: vertical; line-height: 1.5; }
 textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
@@ -189,17 +271,23 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   padding: 0.7rem 0.75rem;
   border: 1px solid var(--linea-fuerte);
   background: var(--papel-alto);
-  border-radius: 2px;
+  border-radius: var(--curva);
   cursor: pointer;
   text-align: left;
   min-height: 3rem;
   width: 100%;
+  box-shadow: var(--sombra-1);
 }
-.opcion[aria-pressed='true'] { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+.opcion[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--oro-vivo) 16%, var(--papel-alto));
+  border-color: var(--oro-vivo);
+  color: var(--tinta);
+  font-weight: 600;
+}
 .opcion small { display: block; font-size: 0.75rem; opacity: 0.75; }
 
 .marca-check { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; }
-.marca-check input { width: 1.1rem; height: 1.1rem; min-height: 0; accent-color: var(--rojo); }
+.marca-check input { width: 1.1rem; height: 1.1rem; min-height: 0; accent-color: var(--oro-vivo); }
 
 /* ---------- piezas ---------- */
 
@@ -207,7 +295,8 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   background: var(--papel-alto);
   border: 1px solid var(--linea);
   border-left: 3px solid var(--linea-fuerte);
-  padding: 0.9rem 1rem;
+  border-radius: var(--curva);
+  padding: 0.95rem 1.05rem;
   margin-bottom: 0.75rem;
 }
 .hoja-alerta { border-left-color: var(--rojo); background: var(--rojo-suave); }
@@ -233,16 +322,18 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   text-transform: uppercase;
   color: var(--tinta-tenue);
   border: 1px solid var(--linea-fuerte);
-  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  padding: 0.08rem 0.45rem;
   white-space: nowrap;
 }
 .etiqueta-grave { color: var(--rojo); border-color: var(--rojo); }
 
-.cifra { display: block; font-family: var(--serif); font-size: 2rem; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.cifra { display: block; font-family: var(--serif); font-size: 2.1rem; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .cifras { display: flex; flex-wrap: wrap; gap: 1.5rem; }
 .cifras span:not(.cifra) { display: block; font-size: 0.75rem; color: var(--tinta-tenue); margin-top: 0.15rem; }
 
 .aviso-error {
+  border-radius: var(--curva-chica);
   border: 1px solid var(--rojo);
   background: var(--rojo-suave);
   color: var(--rojo);
@@ -277,21 +368,32 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 .hueco-mal { border-bottom-color: var(--rojo); color: var(--rojo); text-decoration: line-through; }
 .hueco-correccion { color: var(--verde); font-family: var(--serif); }
 
-.barra-progreso { height: 3px; background: var(--linea); margin-bottom: 1rem; }
-.barra-progreso div { height: 100%; background: var(--tinta); }
+.barra-progreso { height: 4px; background: var(--linea); margin-bottom: 1rem; border-radius: 999px; overflow: hidden; }
+.barra-progreso div {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--oro-vivo), color-mix(in srgb, var(--oro-vivo) 55%, var(--tinta)));
+  transition: width 250ms ease;
+}
 
 .pie-fijo {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(to top, var(--papel) 65%, transparent);
-  padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+  z-index: 5;
+  /* Opaco de verdad abajo: si no, el texto que pasa por detrás se lee a
+     medias y parece un error de la app. */
+  background: linear-gradient(to top, var(--papel) 0 72%, color-mix(in srgb, var(--papel) 0%, transparent) 100%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 1.1rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+  margin-top: 0.5rem;
 }
 
 .tabla { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .tabla th, .tabla td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--linea); }
 .tabla th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-tenue); }
 
-.vacio { padding: 2rem 1rem; text-align: center; color: var(--tinta-tenue); border: 1px dashed var(--linea-fuerte); }
+.vacio { padding: 2rem 1rem; text-align: center; color: var(--tinta-tenue); border: 1px dashed var(--linea-fuerte); border-radius: var(--curva); }
 
 .oculto-visual {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -304,7 +406,7 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   display: flex; gap: 0.6rem; align-items: flex-start;
   padding: 0.6rem 0.2rem; cursor: pointer; font-family: var(--serif); font-size: 1.05rem;
 }
-.pauta input { margin-top: 0.3rem; width: 1.15rem; height: 1.15rem; min-height: 0; accent-color: var(--verde); }
+.pauta input { margin-top: 0.35rem; width: 1.15rem; height: 1.15rem; min-height: 0; accent-color: var(--verde); }
 .pauta label:has(input:checked) { color: var(--tinta-tenue); }
 
 .grilla-dos { display: grid; gap: 0.75rem; }
@@ -319,55 +421,64 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  padding: 0.9rem 1rem;
+  padding: 1rem 1.05rem;
   background: var(--papel-alto);
   border: 1px solid var(--linea);
-  border-left: 3px solid var(--rojo);
+  border-left: 3px solid var(--oro-vivo);
+  border-radius: var(--curva);
+  box-shadow: var(--sombra-1);
   margin: 1rem 0;
 }
 
 .racha-numero {
-  padding-top: 0.15rem;
+  padding-top: 0.1rem;
   text-align: center;
   font-family: var(--serif);
-  font-size: 2.6rem;
+  font-size: 2.8rem;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  color: var(--oro);
 }
 .racha-numero small { display: block; font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--tinta-tenue); }
 .racha .crece { flex: 1; min-width: 0; }
 
 .calendario {
   display: grid;
-  grid-template-rows: repeat(7, 8px);
+  grid-template-rows: repeat(7, 9px);
   grid-auto-flow: column;
-  grid-auto-columns: 8px;
-  gap: 2px;
+  grid-auto-columns: 9px;
+  gap: 3px;
   margin-top: 0.5rem;
   justify-content: start;
   overflow: hidden;
 }
 .calendario i {
   display: block;
-  width: 8px;
-  height: 8px;
-  background: var(--linea);
-  border-radius: 1px;
+  width: 9px;
+  height: 9px;
+  background: color-mix(in srgb, var(--tinta) 15%, transparent);
+  border-radius: 2px;
 }
-.calendario i[data-nivel='1'] { background: color-mix(in srgb, var(--rojo) 45%, var(--linea)); }
-.calendario i[data-nivel='2'] { background: var(--rojo); }
-.calendario i[data-hoy='si'] { outline: 1px solid var(--tinta); outline-offset: 1px; }
+.calendario i[data-nivel='1'] { background: color-mix(in srgb, var(--oro-vivo) 45%, var(--linea)); }
+.calendario i[data-nivel='2'] { background: var(--oro-vivo); }
+.calendario i[data-hoy='si'] { outline: 1.5px solid var(--tinta); outline-offset: 1px; }
 
 .barra {
   display: inline-block;
   width: 5.5rem;
-  height: 6px;
-  background: var(--linea);
+  height: 7px;
+  background: color-mix(in srgb, var(--linea-fuerte) 40%, transparent);
+  border-radius: 999px;
   overflow: hidden;
   flex: none;
 }
-.barra > span { display: block; height: 100%; background: var(--tinta); }
-.barra-ancha { width: 100%; height: 8px; }
+.barra > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--oro-vivo), color-mix(in srgb, var(--oro-vivo) 60%, var(--tinta)));
+}
+.barra-ancha { width: 100%; height: 9px; }
 
 .dominio { display: grid; gap: 0.1rem; }
 .dominio-fila {
@@ -379,25 +490,26 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 }
 .dominio-fila:last-child { border-bottom: 0; }
 .dominio-fila .crece { flex: 1; min-width: 0; }
-.dominio-fila .porcentaje { font-variant-numeric: tabular-nums; font-family: var(--serif); font-size: 1.15rem; min-width: 2.8rem; text-align: right; }
+.dominio-fila .porcentaje { font-variant-numeric: tabular-nums; font-family: var(--serif); font-size: 1.2rem; min-width: 2.8rem; text-align: right; color: var(--oro); }
 
 .marcador { text-align: center; padding: 1.5rem 0 0.5rem; }
 .marcador-cifra {
   font-family: var(--serif);
-  font-size: 3.6rem;
+  font-size: 3.8rem;
   line-height: 1;
+  color: var(--oro);
 }
 
 .anillo { display: flex; align-items: center; gap: 0.75rem; }
 
 /* ---------- pulido ---------- */
 
-.boton { box-shadow: 0 1px 0 var(--sombra); }
+.boton { box-shadow: var(--sombra-1); }
 .boton:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
-.boton-plano, .boton-fuerte:active { box-shadow: none; }
-.opcion { transition: background 90ms linear, border-color 90ms linear; }
-.opcion:hover:not([aria-pressed='true']):not(:disabled) { border-color: var(--tinta); }
-.hoja { box-shadow: 0 1px 0 var(--sombra); }
+.boton-plano { box-shadow: none; }
+.opcion { transition: background 120ms linear, border-color 120ms linear; }
+.opcion:hover:not([aria-pressed='true']):not(:disabled) { border-color: var(--oro-vivo); }
+.hoja { box-shadow: var(--sombra-1); }
 
 .titulo-seccion h1, .titulo-seccion h2 { letter-spacing: -0.01em; }
 .seccion + .seccion { margin-top: 1.75rem; }
@@ -408,39 +520,96 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 
 .accion {
   display: block;
-  padding: 0.7rem 0.85rem;
+  padding: 0.8rem 0.95rem;
   border: 1px solid var(--linea);
   border-left: 3px solid var(--linea-fuerte);
+  border-radius: var(--curva);
   background: var(--papel-alto);
   color: inherit;
   text-decoration: none;
-  box-shadow: 0 1px 0 var(--sombra);
+  box-shadow: var(--sombra-1);
+  transition: border-color 120ms linear, background 120ms linear, transform 120ms ease;
 }
-.accion:hover { border-left-color: var(--rojo); background: var(--papel-hondo); }
+.accion:hover {
+  border-left-color: var(--oro-vivo);
+  background: var(--papel-realce);
+  transform: translateY(-1px);
+}
 .accion strong { display: block; }
-.accion span { display: block; font-size: 0.8rem; color: var(--tinta-tenue); margin-top: 0.1rem; }
+.accion span { display: block; font-size: 0.8rem; color: var(--tinta-tenue); margin-top: 0.15rem; }
 
 @media (min-width: 36rem) { .acciones { grid-template-columns: 1fr 1fr; } }
 
 /* ---------- la próxima jugada ---------- */
 
+/* Lo primero que se ve al abrir la app: tiene que verse como algo, no como
+   un formulario. Filo dorado arriba, escudo de fondo al 6%. */
 .jugada {
-  border: 1px solid var(--linea-fuerte);
-  border-top: 3px solid var(--tinta);
-  background: var(--papel-alto);
-  padding: 1rem;
-  box-shadow: 0 1px 0 var(--sombra);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--linea);
+  border-radius: 14px;
+  background:
+    linear-gradient(160deg,
+      color-mix(in srgb, var(--oro-vivo) 7%, var(--papel-alto)) 0%,
+      var(--papel-alto) 45%);
+  padding: 1.15rem 1.15rem 1.2rem;
+  box-shadow: var(--sombra-2);
 }
-.jugada h2 { font-family: var(--serif); font-size: 1.3rem; margin: 0.35rem 0 0.4rem; }
-.jugada p { margin: 0 0 0.85rem; color: var(--tinta-suave); }
+.jugada::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--oro-vivo), color-mix(in srgb, var(--oro-vivo) 25%, transparent));
+}
+.jugada > * { position: relative; }
+.jugada h2 {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  margin: 0.4rem 0 0.5rem;
+  padding-left: 0;
+}
+.jugada h2::before { content: none; }
+.jugada p { margin: 0 0 1rem; color: var(--tinta-suave); }
 .jugada-rotulo {
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--tinta-tenue);
+  color: var(--oro);
 }
-.jugada-freno { border-top-color: var(--rojo); background: var(--rojo-suave); }
+.jugada-rotulo::before {
+  content: '';
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--oro-vivo);
+}
+.jugada-freno { background: linear-gradient(160deg, var(--rojo-suave) 0%, var(--papel-alto) 55%); }
+.jugada-freno::before { background: linear-gradient(90deg, var(--rojo), transparent); }
 .jugada-freno .jugada-rotulo { color: var(--rojo); }
+.jugada-freno .jugada-rotulo::before { background: var(--rojo); }
+
+/* El escudo, de marca de agua. Nunca por encima del texto. */
+.jugada-escudo {
+  position: absolute;
+  right: -18px;
+  bottom: -26px;
+  width: 148px;
+  height: 148px;
+  object-fit: cover;
+  border-radius: 50%;
+  opacity: 0.07;
+  filter: grayscale(1) contrast(1.1);
+  pointer-events: none;
+  z-index: 0;
+}
 
 /* ---------- selector de páginas ---------- */
 
@@ -456,6 +625,7 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   overflow-y: auto;
   padding: 0.5rem;
   border: 1px solid var(--linea);
+  border-radius: var(--curva);
   background: var(--papel-alto);
   margin: 0.6rem 0 0.4rem;
 }
@@ -470,11 +640,11 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   background: var(--papel);
   color: var(--tinta-tenue);
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: 6px;
 }
-.pagina-chip[aria-pressed='true'] { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+.pagina-chip[aria-pressed='true'] { background: var(--oro-vivo); color: var(--sobre-oro); border-color: var(--oro-vivo); font-weight: 600; }
 .pagina-vacia { opacity: 0.45; font-style: italic; }
-.pagina-hallada { box-shadow: inset 0 -3px 0 var(--rojo); }
+.pagina-hallada { box-shadow: inset 0 -3px 0 var(--oro-vivo); }
 
 /* ---------- filas con muchas acciones (mapa) ---------- */
 
@@ -496,3 +666,49 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 /* Justificar en un teléfono abre huecos enormes entre palabras. */
 @media (min-width: 40rem) { .lectura p { text-align: justify; } }
 .lectura p:first-child { margin-top: 0; }
+
+/* ---------- identidad: el escudo y los adornos ---------- */
+
+/* El escudo de la cinta. Si no pusiste una foto tuya, va el dibujo de la app. */
+.emblema {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  margin-right: 0.45rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid color-mix(in srgb, var(--oro-vivo) 55%, transparent);
+  background: var(--papel-alto);
+}
+/* El escudo dibujado ya tiene su contorno: el aro redondo le cortaría las
+   puntas. El aro es para las fotos, que sí van recortadas en círculo. */
+.emblema-svg { border: 0; border-radius: 0; background: none; }
+
+/* Una franja negra y blanca, del ancho de la tarjeta, como remate. */
+.franja-cc {
+  height: 4px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--tinta) 0 14px,
+    color-mix(in srgb, var(--tinta) 12%, transparent) 14px 28px
+  );
+  opacity: 0.5;
+}
+
+/* El detalle del día: chiquito, tenue, abajo. Nunca compite con el texto. */
+.adorno {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 2rem 0 0.5rem;
+  color: var(--tinta-tenue);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.adorno svg { display: block; color: var(--oro-vivo); opacity: 0.75; }
+.adorno-linea { flex: 1; max-width: 4rem; height: 1px; background: var(--linea-fuerte); opacity: 0.6; }
+
+.estrellas { display: inline-flex; gap: 2px; color: var(--oro-vivo); }
