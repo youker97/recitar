@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { useCursoActivo, useDatos, useRevisiones } from '../datos/hooks'
 import { estaDominado } from '../logica/plan'
+import { calibracion } from '../logica/prontitud'
+import { NOMBRE_CONFIANZA } from '../datos/tipos'
 import { NOMBRE_TIPO, type TipoItem } from '../datos/tipos'
 
 const DIA = 24 * 60 * 60 * 1000
@@ -49,6 +51,8 @@ export function Estadisticas() {
     return [...mapa.entries()].sort((a, b) => b[1].total - a[1].total)
   }, [ultimos30])
 
+  const calib = useMemo(() => calibracion(ultimos30), [ultimos30])
+
   const diasSeguidos = useMemo(() => {
     const dias = new Set(revisiones.map((r) => new Date(r.fecha).toDateString()))
     let cuenta = 0
@@ -91,6 +95,45 @@ export function Estadisticas() {
           </div>
         )}
       </section>
+
+      {calib.intentos >= 10 && (
+        <>
+          <hr className="filete" />
+          <section className="seccion">
+            <div className="titulo-seccion">
+              <h2>Qué tan bien te conoces</h2>
+              <span className="lado numeral">
+                {calib.exceso > 0 ? `+${calib.exceso} de más` : `${calib.exceso}`}
+              </span>
+            </div>
+            <p className="apunte">
+              Cuando dices que estás seguro, ¿aciertas? Darse cuenta de esto es lo que baja el exceso
+              de confianza, que es lo que te hunde en un oral.
+            </p>
+            <table className="tabla">
+              <thead>
+                <tr><th>Dijiste</th><th>Veces</th><th>Acertaste</th></tr>
+              </thead>
+              <tbody>
+                {calib.filas.filter((f) => f.intentos > 0).map((f) => (
+                  <tr key={f.confianza}>
+                    <td>{NOMBRE_CONFIANZA[f.confianza]}</td>
+                    <td className="numeral">{f.intentos}</td>
+                    <td className="numeral">{f.razon}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="apunte" style={{ marginTop: '0.5rem' }}>
+              {calib.exceso > 15
+                ? 'Te crees más de lo que sabes. Antes de decir "seguro", dite la respuesta completa en voz alta.'
+                : calib.exceso < -15
+                  ? 'Sabes más de lo que crees. Confía un poco más: la duda te está costando tiempo.'
+                  : 'Estás bien calibrado: cuando dices que sabes, sabes.'}
+            </p>
+          </section>
+        </>
+      )}
 
       {porBloque.length > 0 && (
         <>

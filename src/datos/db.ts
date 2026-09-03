@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 import type {
-  Ajustes, Curso, Evaluacion, Grabacion, Item, Progreso, Revision,
+  Ajustes, Curso, Evaluacion, Fuente, Grabacion, Item, Progreso, Revision, Volcado,
 } from './tipos'
 import { AJUSTES_POR_DEFECTO } from './tipos'
 
@@ -12,6 +12,8 @@ export class BaseRecitar extends Dexie {
   evaluaciones!: Table<Evaluacion, string>
   grabaciones!: Table<Grabacion, string>
   ajustes!: Table<Ajustes, string>
+  fuentes!: Table<Fuente, string>
+  volcados!: Table<Volcado, string>
 
   constructor(nombre = 'recitar') {
     super(nombre)
@@ -23,6 +25,10 @@ export class BaseRecitar extends Dexie {
       evaluaciones: 'id, cursoId, fecha',
       grabaciones: 'id, itemId, fecha',
       ajustes: 'id',
+    })
+    this.version(2).stores({
+      fuentes: 'id, cursoId, bloque, creadoEn',
+      volcados: 'id, cursoId, bloque, fecha',
     })
   }
 }

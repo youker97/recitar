@@ -47,6 +47,7 @@ export function Sesion() {
   const soloErrores = params.get('errores') === '1'
   const oral = params.get('oral') === '1'
   const bloqueFiltro = params.get('bloque') ?? undefined
+  const soloEstos = (params.get('items') ?? '').split(',').filter(Boolean)
   const limite = Number(params.get('limite')) || undefined
 
   const [arrancada, setArrancada] = useState(false)
@@ -73,6 +74,7 @@ export function Sesion() {
     if (arrancada || !datos || datos.length === 0) return
     const cola = armarCola(datos, {
       soloErrores,
+      soloEstos,
       bloques: bloqueFiltro ? [bloqueFiltro] : undefined,
       cadenaActiva: ajustes.cadenaActiva,
       nuevosPorDia: ajustes.nuevosPorDia,

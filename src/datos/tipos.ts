@@ -224,6 +224,36 @@ export interface Grabacion {
   blob: Blob
 }
 
+/**
+ * El texto original de un apunte, guardado para poder darle la primera pasada
+ * (leer con preguntas antes y volcado después) y no solo estudiar las fichas.
+ */
+export interface Fuente {
+  id: string
+  cursoId: string
+  bloque: string
+  titulo: string
+  texto: string
+  creadoEn: number
+  /** Hasta qué trozo llegó la primera pasada. */
+  avance: number
+  terminada: boolean
+}
+
+/** Un volcado: escribir de memoria todo lo que queda de un bloque. */
+export interface Volcado {
+  id: string
+  cursoId: string
+  bloque: string
+  fecha: number
+  texto: string
+  encontrados: number
+  total: number
+  duracionMs: number
+  /** Ítems cuyos conceptos no salieron. */
+  faltantes: string[]
+}
+
 export type Motor = 'fsrs' | 'leitner'
 
 export interface Ajustes {

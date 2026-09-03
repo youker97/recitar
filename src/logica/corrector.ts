@@ -8,7 +8,7 @@
 // Encima de esto está la corrección con Claude (semántica) y, al final, tu
 // propia mano. Los tres niveles conviven.
 
-import { contiene, fichas } from './comparar'
+import { contiene } from './comparar'
 import type { DatosVF, PuntoPauta } from '../datos/tipos'
 
 /** Acepta la pauta antigua (textos pelados) y la nueva (con claves). */
@@ -18,22 +18,115 @@ export function puntosDe(checklist: (string | PuntoPauta)[]): PuntoPauta[] {
 
 const RELLENO = new Set([
   'menciona', 'cita', 'nombra', 'explica', 'señala', 'indica', 'distingue',
-  'define', 'desarrolla', 'punto', 'debe', 'tiene', 'hace', 'dice',
+  'define', 'desarrolla', 'punto', 'debe', 'tiene', 'hace', 'dice', 'todo',
+  'toda', 'todos', 'todas', 'cuando', 'donde', 'porque', 'entonces', 'tambien',
+  'ademas', 'salvo', 'segun', 'sino', 'aunque', 'mismo', 'misma', 'otro', 'otra',
+  'menos', 'mas', 'muy', 'solo', 'tanto', 'cada', 'ello', 'esto', 'eso',
 ])
 
+/** Formas verbales que no son el concepto, aunque sean largas. */
+const TERMINACIONES = ['ando', 'iendo', 'arla', 'arlo', 'arle', 'arse', 'aron', 'aban', 'aria', 'arian']
+
+function esPalabraDeContenido(normalizada: string): boolean {
+  if (!normalizada) return false
+  if (/^\d{2,}$/.test(normalizada)) return true
+  if (normalizada.length < 4) return false
+  if (VACIAS_LOCALES.has(normalizada) || RELLENO.has(normalizada)) return false
+  return !TERMINACIONES.some((t) => normalizada.endsWith(t))
+}
+
+// Las mismas palabras vacías que usa la comparación, más las de relleno.
+const VACIAS_LOCALES = new Set([
+  'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'de', 'del', 'al',
+  'a', 'ante', 'con', 'en', 'para', 'por', 'sin', 'sobre', 'tras', 'y', 'e',
+  'o', 'u', 'que', 'se', 'su', 'sus', 'lo', 'le', 'les', 'es', 'son', 'ser',
+  'sea', 'sean', 'esta', 'este', 'estos', 'estas', 'ha', 'han', 'hay',
+  'tener', 'tenga', 'tengan', 'tiene', 'tienen', 'puede', 'pueden', 'deben',
+])
+
+interface Ficha {
+  texto: string
+  normalizada: string
+  inicio: number
+  fin: number
+  /** Posición entre todas las palabras del texto. */
+  orden: number
+}
+
+function fichar(texto: string): Ficha[] {
+  const salida: Ficha[] = []
+  const patron = /[\p{L}\p{N}]+/gu
+  let coincidencia: RegExpExecArray | null
+  let orden = 0
+  while ((coincidencia = patron.exec(texto)) !== null) {
+    salida.push({
+      texto: coincidencia[0],
+      normalizada: coincidencia[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),
+      inicio: coincidencia.index,
+      fin: coincidencia.index + coincidencia[0].length,
+      orden: orden++,
+    })
+  }
+  return salida
+}
+
 /**
- * Si la pauta no trae claves, se deducen del propio punto: las palabras con
- * más contenido, más los números (que casi siempre son artículos).
+ * Si la pauta no trae claves, se deducen del propio punto. Se prefieren
+ * frases de dos palabras ("culpa grave", "ministerio público") antes que
+ * palabras sueltas, porque una palabra suelta no es un concepto. Los números
+ * de artículo siempre entran.
  */
 export function clavesDe(punto: PuntoPauta, cuantas = 3): string[] {
   if (punto.claves?.length) return punto.claves
-  const palabras = fichas(punto.texto).filter((p) => !RELLENO.has(p))
-  const numeros = palabras.filter((p) => /^\d{2,}$/.test(p))
-  const largas = palabras
-    .filter((p) => p.length >= 5 && !/^\d+$/.test(p))
-    .sort((a, b) => b.length - a.length)
-  const elegidas = [...new Set([...numeros, ...largas])].slice(0, cuantas)
-  return elegidas.length > 0 ? elegidas : palabras.slice(0, 1)
+
+  const fichas = fichar(punto.texto)
+  const contenido = fichas.filter((f) => esPalabraDeContenido(f.normalizada))
+  if (contenido.length === 0) return []
+
+  const numeros = contenido.filter((f) => /^\d{2,}$/.test(f.normalizada))
+  const palabras = contenido.filter((f) => !/^\d+$/.test(f.normalizada))
+
+  // Frases: dos palabras de contenido separadas por a lo más una palabra vacía.
+  const frases: { texto: string; peso: number; usa: number[] }[] = []
+  for (let i = 0; i + 1 < palabras.length; i++) {
+    const a = palabras[i]
+    const b = palabras[i + 1]
+    if (b.orden - a.orden > 2) continue
+    // Una frase no cruza puntuación: "prueba: incumbe" no es un concepto.
+    const entre = punto.texto.slice(a.fin, b.inicio)
+    if (!/^[\p{L}\s]*$/u.test(entre)) continue
+    frases.push({
+      texto: punto.texto.slice(a.inicio, b.fin),
+      peso: a.texto.length + b.texto.length,
+      usa: [a.orden, b.orden],
+    })
+  }
+  frases.sort((x, y) => y.peso - x.peso || x.usa[0] - y.usa[0])
+
+  const ocupadas = new Set<number>()
+  const elegidas: string[] = []
+  for (const f of frases) {
+    if (f.usa.some((o) => ocupadas.has(o))) continue
+    f.usa.forEach((o) => ocupadas.add(o))
+    elegidas.push(f.texto)
+    if (elegidas.length >= cuantas) break
+  }
+
+  for (const n of numeros) {
+    if (elegidas.length >= cuantas + numeros.length) break
+    if (!elegidas.some((e) => e.includes(n.texto))) elegidas.push(n.texto)
+  }
+
+  if (elegidas.length === 0) {
+    const sueltas = palabras
+      .filter((f) => !ocupadas.has(f.orden))
+      .sort((a, b) => b.texto.length - a.texto.length)
+      .slice(0, cuantas)
+      .map((f) => f.texto)
+    return sueltas.length > 0 ? sueltas : [contenido[0].texto]
+  }
+
+  return elegidas.slice(0, cuantas + numeros.length)
 }
 
 export interface PuntoRevisado {

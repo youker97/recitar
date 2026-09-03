@@ -6,6 +6,7 @@ import { cargaDeHoy, formatearFecha } from '../logica/plan'
 import { generarConsejos } from '../logica/consejos'
 import { resumenDeItem } from '../logica/resumen'
 import { calcularRacha } from '../logica/racha'
+import { prontitudEn } from '../logica/prontitud'
 import { dominioGeneral, dominioPorBloque } from '../logica/dominio'
 import { Racha } from '../componentes/Racha'
 import { ListaDominio } from '../componentes/Dominio'
@@ -27,6 +28,11 @@ export function Inicio() {
   const bloques = useMemo(() => dominioPorBloque(datos), [datos])
   const general = useMemo(() => dominioGeneral(datos), [datos])
   const plan = useMemo(() => cargaDeHoy(evaluaciones, datos), [evaluaciones, datos])
+  const proxima = plan.estados[0]
+  const prontitud = useMemo(
+    () => (proxima ? prontitudEn(datos, proxima.evaluacion.fecha, proxima.evaluacion.bloques) : null),
+    [datos, proxima],
+  )
   const consejos = useMemo(
     () => generarConsejos({ datos, items, revisiones, estados: plan.estados, ajustes }),
     [datos, items, revisiones, plan.estados, ajustes],
@@ -126,10 +132,25 @@ export function Inicio() {
           <a className="boton boton-fuerte boton-ancho" href="#/estudiar">
             {hoy > 0 ? 'Empezar la sesión de hoy' : 'Estudiar igual'}
           </a>
-          <div className="grilla-dos">
-            <a className="boton boton-ancho" href="#/estudiar?oral=1">Sesión oral</a>
-            <a className="boton boton-ancho" href="#/ensayo">Rendir un ensayo</a>
-          </div>
+        </div>
+
+        <div className="acciones">
+          <a className="accion" href="#/pasada">
+            <strong>Primera pasada</strong>
+            <span>Para lo que todavía no entiendes: predecir, leer y cerrar el texto.</span>
+          </a>
+          <a className="accion" href="#/volcado">
+            <strong>Volcado</strong>
+            <span>Hoja en blanco: escribir de memoria todo lo que queda de una materia.</span>
+          </a>
+          <a className="accion" href="#/ensayo">
+            <strong>Ensayo</strong>
+            <span>Evaluación completa, sin ver nada hasta el final. La corrige la app.</span>
+          </a>
+          <a className="accion" href="#/estudiar?oral=1">
+            <strong>Sesión oral</strong>
+            <span>Responder hablando, con cronómetro y repreguntas encadenadas.</span>
+          </a>
         </div>
       </section>
 
@@ -138,7 +159,7 @@ export function Inicio() {
       <section className="seccion">
         <div className="titulo-seccion">
           <h2>Cuánto dominas</h2>
-          <span className="lado numeral">{general.porcentaje}% del curso</span>
+          <a className="lado" href="#/estadisticas">{general.porcentaje}% · ver detalle</a>
         </div>
         {bloques.length === 0 ? (
           <p className="apunte">Todavía no hay materias con avance.</p>
@@ -150,6 +171,49 @@ export function Inicio() {
           olvide. Un ítem recién visto casi no suma.
         </p>
       </section>
+
+      {proxima && prontitud && prontitud.enJuego > 0 && (
+        <>
+          <hr className="filete" />
+          <section className="seccion">
+            <div className="titulo-seccion">
+              <h2>Si la prueba fuera hoy</h2>
+              <span className="lado">{proxima.evaluacion.nombre}</span>
+            </div>
+            <div className="marcador" style={{ paddingTop: '0.5rem' }}>
+              <div className="marcador-cifra numeral">{prontitud.esperado}%</div>
+              <div className="apunte">
+                de la materia que entra la recordarías el día de la prueba
+              </div>
+            </div>
+            <p className="apunte">
+              No es cuántas fichas viste: es la probabilidad de acordarte de cada cosa ese día,
+              calculada con la curva de olvido.
+              {prontitud.sinVer > 0 && ` Hay ${prontitud.sinVer} ítems que nunca has estudiado y cuentan como cero.`}
+            </p>
+            {prontitud.porBloque.length > 1 && (
+              <div className="dominio">
+                {prontitud.porBloque.slice(0, 5).map((b) => (
+                  <div key={b.bloque} className="dominio-fila">
+                    <div className="crece">{b.bloque}</div>
+                    <span className="barra" aria-hidden="true">
+                      <span style={{ width: `${Math.max(2, b.esperado)}%` }} />
+                    </span>
+                    <span className="porcentaje">{b.esperado}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {prontitud.enPeligro.length > 0 && (
+              <p style={{ marginTop: '0.75rem' }}>
+                <a className="boton boton-chico" href={`#/estudiar?items=${prontitud.enPeligro.slice(0, 40).map((d) => d.item.id).join(',')}`}>
+                  Reforzar los {Math.min(40, prontitud.enPeligro.length)} que se van a caer
+                </a>
+              </p>
+            )}
+          </section>
+        </>
+      )}
 
       {plan.estados.length > 0 && (
         <>

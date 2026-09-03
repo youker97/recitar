@@ -11,16 +11,16 @@ import { Importar } from './pantallas/Importar'
 import { Ajustes as PantallaAjustes } from './pantallas/Ajustes'
 import { Estadisticas } from './pantallas/Estadisticas'
 import { Ensayo } from './pantallas/Ensayo'
+import { Volcado } from './pantallas/Volcado'
+import { Pasada } from './pantallas/Pasada'
 import { Sesion } from './modos/Sesion'
 
 const NAVEGACION = [
   { ruta: '/', texto: 'Hoy' },
   { ruta: '/errores', texto: 'Errores' },
-  { ruta: '/ensayo', texto: 'Ensayo' },
   { ruta: '/material', texto: 'Material' },
-  { ruta: '/pruebas', texto: 'Pruebas' },
   { ruta: '/importar', texto: 'Importar' },
-  { ruta: '/estadisticas', texto: 'Avance' },
+  { ruta: '/pruebas', texto: 'Pruebas' },
   { ruta: '/ajustes', texto: 'Ajustes' },
 ]
 
@@ -43,6 +43,8 @@ export default function App() {
     case '/estudiar': pantalla = <Sesion />; break
     case '/errores': pantalla = <Errores />; break
     case '/ensayo': pantalla = <Ensayo />; break
+    case '/volcado': pantalla = <Volcado />; break
+    case '/pasada': pantalla = <Pasada />; break
     case '/material': pantalla = <Material />; break
     case '/editor': pantalla = <Editor />; break
     case '/pruebas': pantalla = <Evaluaciones />; break
@@ -58,7 +60,7 @@ export default function App() {
       )
   }
 
-  const enSesion = ruta === '/estudiar' || ruta === '/ensayo'
+  const enSesion = ruta === '/estudiar' || ruta === '/ensayo' || ruta === '/volcado' || ruta === '/pasada'
 
   return (
     <>

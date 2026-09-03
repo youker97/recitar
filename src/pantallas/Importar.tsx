@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { guardarAjustes } from '../datos/db'
 import { crearCurso, guardarItems } from '../datos/repos'
+import { db, guardarAjustes, nuevoId } from '../datos/db'
 import { useCursoActivo, useCursos, useItems } from '../datos/hooks'
 import { aItems, validarPaquete, type ResultadoValidacion } from '../datos/esquema'
 import { convertirApunte } from '../importar/texto'
@@ -139,6 +139,26 @@ export function Importar() {
     }
     const nuevos = aItems(validado.items, cursoId, origen)
     await guardarItems(nuevos)
+
+    // El apunte original se guarda aparte: sirve para darle la primera pasada,
+    // que es leer con preguntas antes y volcado después.
+    const fuente = textoSeleccionado.trim()
+    if (fuente.length > 400) {
+      const cuenta = new Map<string, number>()
+      for (const i of nuevos) cuenta.set(i.bloque, (cuenta.get(i.bloque) ?? 0) + 1)
+      const bloquePrincipal = [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Sin bloque'
+      await db.fuentes.put({
+        id: nuevoId('f'),
+        cursoId,
+        bloque: bloquePrincipal,
+        titulo: fuente.split('\n').find((l) => l.trim().length > 3)?.slice(0, 70).trim() ?? 'Apunte',
+        texto: fuente,
+        creadoEn: Date.now(),
+        avance: 0,
+        terminada: false,
+      })
+    }
+
     setAviso(`Se guardaron ${nuevos.length} ítems.`)
     setValidado(null)
     setPaso('elegir')

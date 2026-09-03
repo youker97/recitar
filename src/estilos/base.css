@@ -401,3 +401,23 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 
 .titulo-seccion h1, .titulo-seccion h2 { letter-spacing: -0.01em; }
 .seccion + .seccion { margin-top: 1.75rem; }
+
+/* ---------- acciones de la pantalla de hoy ---------- */
+
+.acciones { display: grid; gap: 0.5rem; margin-top: 0.75rem; }
+
+.accion {
+  display: block;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--linea);
+  border-left: 3px solid var(--linea-fuerte);
+  background: var(--papel-alto);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 1px 0 var(--sombra);
+}
+.accion:hover { border-left-color: var(--rojo); background: var(--papel-hondo); }
+.accion strong { display: block; }
+.accion span { display: block; font-size: 0.8rem; color: var(--tinta-tenue); margin-top: 0.1rem; }
+
+@media (min-width: 36rem) { .acciones { grid-template-columns: 1fr 1fr; } }

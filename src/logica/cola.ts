@@ -7,6 +7,8 @@ export interface ItemConProgreso {
 
 export interface FiltroSesion {
   bloques?: string[]
+  /** Solo estos ítems, en cualquier estado (lo que no salió en un volcado). */
+  soloEstos?: string[]
   tipos?: TipoItem[]
   soloErrores?: boolean
   incluirNuevos?: boolean
@@ -64,8 +66,12 @@ export function armarCola(datos: ItemConProgreso[], filtro: FiltroSesion = {}): 
   const nuevosPorDia = filtro.nuevosPorDia ?? 20
   const incluirNuevos = filtro.incluirNuevos ?? true
 
+  const soloEstos = filtro.soloEstos?.length ? new Set(filtro.soloEstos) : null
+
   const candidatos = datos.filter(({ item, progreso }) => {
     if (item.suspendido) return false
+    // Una lista explícita manda sobre los vencimientos: son los que hay que ver.
+    if (soloEstos) return soloEstos.has(item.id)
     // Las repreguntas se lanzan encadenadas, no sueltas.
     if (cadenaActiva && item.padreId) return false
     if (filtro.bloques?.length && !filtro.bloques.includes(item.bloque)) return false

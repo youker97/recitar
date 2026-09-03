@@ -52,6 +52,9 @@ Tres niveles, y los tres conviven:
 Verdadero/falso, alternativas, listas, artículos, texto legal y triaje se
 corrigen solos siempre, sin internet ni ayuda.
 
+Cada decisión de diseño responde a un hallazgo concreto sobre cómo se aprende:
+está explicado con sus fuentes en [docs/METODO.md](docs/METODO.md).
+
 ### Los modos
 
 | Modo | Qué entrena |
@@ -64,6 +67,9 @@ corrigen solos siempre, sin internet ni ayuda.
 | Texto legal | Huecos sobre el texto literal, que cambian entre repasos |
 | Desarrollo | En papel (cronómetro y pauta al terminar) o tecleado |
 | Oral | Respondes en voz alta con cronómetro; grabación opcional |
+| Primera pasada | Lo único que se lee: predecir sin saber, leer, cerrar y escribir lo que quedó |
+| Volcado | Hoja en blanco: todo lo que queda de una materia, y qué conceptos no aparecieron |
+| Ensayo | Evaluación completa sin ver nada hasta el final, corregida sola y sin internet |
 
 ## Cómo meter material
 

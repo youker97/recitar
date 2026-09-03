@@ -46,6 +46,31 @@ describe('corrector automático sin internet', () => {
     expect(claves).not.toContain('menciona')
   })
 
+  it('prefiere frases de dos palabras antes que palabras sueltas', () => {
+    const claves = clavesDe({ texto: 'Distingue la culpa grave de la culpa leve' })
+    expect(claves).toContain('culpa grave')
+    expect(claves).toContain('culpa leve')
+    expect(claves).not.toContain('culpa')
+  })
+
+  it('no toma formas verbales sueltas como concepto', () => {
+    const claves = clavesDe({
+      texto: 'El juez puede declararla de oficio cuando aparece de manifiesto en el acto',
+    })
+    expect(claves.join(' ')).not.toContain('declararla')
+    expect(claves.some((c) => c.includes('manifiesto'))).toBe(true)
+  })
+
+  it('el ministerio público sale entero, no partido', () => {
+    const claves = clavesDe({ texto: 'También el ministerio público en interés de la moral o de la ley' })
+    expect(claves).toContain('ministerio público')
+  })
+
+  it('no arma frases cruzando puntuación', () => {
+    const claves = clavesDe({ texto: 'Carga de la prueba: incumbe probar las obligaciones' })
+    expect(claves.join(' | ')).not.toContain('prueba: incumbe')
+  })
+
   it('acepta pautas antiguas de texto pelado', () => {
     expect(puntosDe(['uno', 'dos'])).toEqual([{ texto: 'uno' }, { texto: 'dos' }])
   })
