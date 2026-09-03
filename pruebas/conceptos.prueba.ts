@@ -237,4 +237,18 @@ describe('cómo se muestra un término sacado del texto', () => {
   it('respeta las siglas dentro de una frase normal', () => {
     expect(presentar('el tipo penal del CP')).toBe('el tipo penal del CP')
   })
+
+  it('no convierte los números romanos en minúscula', () => {
+    expect(presentar('BLOQUE I — EL CONTRATO')).toBe('Bloque I — el contrato')
+    expect(presentar('TITULO XXXIII DEL LIBRO IV')).toBe('Titulo XXXIII del libro IV')
+  })
+
+  it('deja las siglas legales como están al bajar un título gritado', () => {
+    expect(presentar('EL ARTICULO 19 DE LA CPR')).toBe('El articulo 19 de la CPR')
+    expect(presentar('LAS FUENTES SEGUN EL CC')).toBe('Las fuentes segun el CC')
+  })
+
+  it('sí baja las palabras corrientes cortas', () => {
+    expect(presentar('EL USO DE LA COSA')).toBe('El uso de la cosa')
+  })
 })

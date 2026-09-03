@@ -661,10 +661,72 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 /* ---------- lectura de un apunte ---------- */
 
 .lectura { margin: 0.75rem 0 1rem; }
-.lectura p { margin: 0 0 0.9rem; hyphens: auto; }
+/* Sin partir palabras: en un teléfono angosto dejaba "alema-na" y
+   "descrip-ciones" en media línea, y eso cansa más que ahorrar espacio. */
+.lectura p { margin: 0 0 0.95rem; hyphens: manual; }
 /* Justificar en un teléfono abre huecos enormes entre palabras. */
-@media (min-width: 40rem) { .lectura p { text-align: justify; } }
-.lectura p:first-child { margin-top: 0; }
+@media (min-width: 40rem) { .lectura > p.estudio { text-align: justify; } }
+.lectura > *:first-child { margin-top: 0; }
+
+/* --- títulos que ya venían en el apunte --- */
+
+.lectura-titulo {
+  font-family: var(--sans);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--tinta);
+  margin: 1.6rem 0 0.7rem;
+}
+.lectura-titulo-1 {
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid var(--oro-vivo);
+}
+.lectura-titulo-2 {
+  font-size: 1.02rem;
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--oro-vivo);
+}
+.lectura-titulo-3 {
+  font-size: 0.96rem;
+  color: var(--tinta-suave);
+  letter-spacing: 0.02em;
+}
+
+/* --- la cita literal de un artículo, como en un apunte bien hecho --- */
+
+.cita-legal {
+  margin: 1.1rem 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--linea);
+  border-left: 3px solid var(--oro-vivo);
+  border-radius: var(--curva);
+  background: color-mix(in srgb, var(--oro-vivo) 6%, var(--papel-alto));
+}
+.cita-fuente {
+  display: block;
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--oro);
+  margin-bottom: 0.4rem;
+}
+.cita-legal .estudio {
+  display: block;
+  font-style: italic;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+/* --- enumeraciones --- */
+
+.lectura-lista { margin: 0 0 1rem; padding-left: 1.4rem; }
+.lectura-lista li { margin-bottom: 0.4rem; }
+.lectura-lista li::marker { color: var(--oro); font-family: var(--sans); font-size: 0.85em; }
 
 /* ---------- identidad: el escudo y los adornos ---------- */
 
