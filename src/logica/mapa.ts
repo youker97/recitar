@@ -1,42 +1,70 @@
 // El mapa del apunte: partirlo por sus propios temas en vez de cada tantas
 // letras. Un corte a mitad de una idea no sirve para estudiar.
+//
+// El problema real de un apunte de Derecho es que está lleno de numeración
+// ("2.1.- Elementos descriptivos", "a) ...") y si se toma cada una como tema
+// salen noventa temas de un archivo. Por eso los títulos se clasifican por
+// jerarquía y se elige el nivel que parte el apunte en pedazos con sentido.
 
 import type { SeccionApunte } from '../datos/tipos'
 
-const LARGO_MINIMO = 220
+/** Piso absoluto: más corto que esto no es un tema. */
+const LARGO_MINIMO = 250
+/** Tamaño al que se apunta por tema. */
+const LARGO_IDEAL = 3000
+const MAXIMO_SECCIONES = 40
 const TITULO_MAXIMO = 90
 
-const MARKDOWN = /^#{1,6}\s+(.{2,90})$/
-const NUMERADO = /^\s*(?:[IVXLCDM]{1,7}|\d{1,2}(?:\.\d{1,2}){0,2}|[a-zA-Z])\s*[.)\-–]\s+(.{2,90})$/
-
-function tieneMinusculas(linea: string): boolean {
-  return /\p{Ll}/u.test(linea)
+interface Candidato {
+  titulo: string
+  inicio: number
+  /** 1 es el título más fuerte; 5 el más débil. */
+  nivel: number
 }
 
-function cuentaLetras(linea: string): number {
+const MARKDOWN = /^(#{1,6})\s+(.{2,90})$/
+// La numeración chilena viene como "1.-", "2.1.-", "I.-" o "a)": hay que
+// aceptar varios separadores seguidos, no uno solo.
+const SEPARADOR = '\\s*[.)\\-–]{1,3}\\s*'
+const ROMANO = new RegExp(`^\\s*([IVXLCDM]{1,7})${SEPARADOR}(\\p{L}.{1,89})$`, 'u')
+const CAPITULO = /^\s*(cap[íi]tulo|t[íi]tulo|unidad|lecci[óo]n|parte)\s+[\wíáéóú]+\s*[.:)\-–]*\s*(.{0,90})$/i
+const NUMERO_SIMPLE = new RegExp(`^\\s*(\\d{1,2})${SEPARADOR}(\\p{L}.{1,89})$`, 'u')
+const NUMERO_COMPUESTO = new RegExp(`^\\s*(\\d{1,2}(?:\\.\\d{1,2}){1,2})${SEPARADOR}(\\p{L}.{1,89})$`, 'u')
+const LETRA = new RegExp(`^\\s*([a-zA-Z])\\s*[.)]\\s*(\\p{L}.{1,89})$`, 'u')
+
+function letras(linea: string): number {
   return (linea.match(/\p{L}/gu) ?? []).length
 }
 
-function esTitulo(linea: string, anterior: string): string | null {
+function clasificar(linea: string, anterior: string): Candidato | null {
   const limpia = linea.trim()
   if (!limpia || limpia.length > TITULO_MAXIMO) return null
+  if (letras(limpia) < 4) return null
 
   const md = limpia.match(MARKDOWN)
-  if (md) return md[1].trim()
+  if (md) return { titulo: md[2].trim(), inicio: 0, nivel: Math.min(2, md[1].length) }
 
-  const num = limpia.match(NUMERADO)
-  if (num && !/[.;,]$/.test(num[1])) return num[1].trim()
+  const cap = limpia.match(CAPITULO)
+  if (cap) return { titulo: limpia.replace(/[:.]$/, ''), inicio: 0, nivel: 1 }
 
-  const letras = cuentaLetras(limpia)
-  if (letras < 4) return null
+  // MAYÚSCULAS SOSTENIDAS: casi siempre es un título de verdad.
+  if (!/\p{Ll}/u.test(limpia)) return { titulo: limpia.replace(/[:.]$/, ''), inicio: 0, nivel: 2 }
 
-  // MAYÚSCULAS SOSTENIDAS.
-  if (!tieneMinusculas(limpia) && letras >= 4) return limpia.replace(/[:.]$/, '')
+  const romano = limpia.match(ROMANO)
+  if (romano && !/[.;,]$/.test(romano[2])) return { titulo: limpia, inicio: 0, nivel: 3 }
+
+  const simple = limpia.match(NUMERO_SIMPLE)
+  if (simple && !/[.;,]$/.test(simple[2])) return { titulo: limpia, inicio: 0, nivel: 3 }
+
+  const compuesto = limpia.match(NUMERO_COMPUESTO)
+  if (compuesto && !/[.;,]$/.test(compuesto[2])) return { titulo: limpia, inicio: 0, nivel: 4 }
+
+  const letra = limpia.match(LETRA)
+  if (letra && !/[.;,]$/.test(letra[2])) return { titulo: limpia, inicio: 0, nivel: 5 }
 
   // Línea corta, sin punto final, con un renglón en blanco antes.
-  const sola = anterior.trim() === ''
-  if (sola && !/[.;,:]$/.test(limpia) && limpia.split(/\s+/).length <= 9) {
-    return limpia
+  if (anterior.trim() === '' && !/[.;,:]$/.test(limpia) && limpia.split(/\s+/).length <= 9) {
+    return { titulo: limpia, inicio: 0, nivel: 5 }
   }
 
   return null
@@ -48,51 +76,83 @@ function esTitulo(linea: string, anterior: string): string | null {
  */
 export function detectarSecciones(texto: string): SeccionApunte[] {
   const lineas = texto.split('\n')
-  const cortes: { titulo: string; inicio: number }[] = []
+  const candidatos: Candidato[] = []
   let posicion = 0
 
   for (let i = 0; i < lineas.length; i++) {
-    const titulo = esTitulo(lineas[i], i > 0 ? lineas[i - 1] : '')
-    if (titulo) cortes.push({ titulo, inicio: posicion })
+    const c = clasificar(lineas[i], i > 0 ? lineas[i - 1] : '')
+    if (c) candidatos.push({ ...c, inicio: posicion })
     posicion += lineas[i].length + 1
   }
 
-  if (cortes.length === 0 || (cortes.length === 1 && cortes[0].inicio > texto.length / 2)) {
-    return porPedazos(texto)
-  }
+  if (candidatos.length === 0) return porPedazos(texto)
 
-  // El texto antes del primer título no se pierde.
-  if (cortes[0].inicio > LARGO_MINIMO) {
-    cortes.unshift({ titulo: 'Introducción', inicio: 0 })
+  // Cuántos temas tiene sentido para el largo de este apunte.
+  const objetivo = Math.max(3, Math.min(MAXIMO_SECCIONES, Math.round(texto.length / LARGO_IDEAL)))
+
+  // Se baja de nivel mientras el corte siga siendo razonable: primero solo los
+  // títulos fuertes, y solo si quedan muy pocos se admiten los más débiles.
+  let elegidos = candidatos.filter((c) => c.nivel <= 1)
+  for (let nivel = 2; nivel <= 5; nivel++) {
+    const conEste = candidatos.filter((c) => c.nivel <= nivel)
+    if (elegidos.length >= 3 && conEste.length > objetivo * 1.6) break
+    elegidos = conEste
+    if (elegidos.length >= objetivo) break
+  }
+  if (elegidos.length === 0) elegidos = candidatos
+
+  // El mínimo se adapta al largo: en un apunte corto un tema de media página
+  // es legítimo; en uno de trescientas hojas, no.
+  const minimo = Math.max(
+    LARGO_MINIMO,
+    Math.min(1500, Math.round(texto.length / Math.max(1, objetivo * 3))),
+  )
+
+  return recortar(aSecciones(elegidos, texto, minimo), texto, minimo)
+}
+
+function aSecciones(cortes: Candidato[], texto: string, minimo: number): SeccionApunte[] {
+  const ordenados = [...cortes].sort((a, b) => a.inicio - b.inicio)
+  if (ordenados[0].inicio > minimo) {
+    ordenados.unshift({ titulo: 'Introducción', inicio: 0, nivel: 1 })
   } else {
-    cortes[0].inicio = 0
+    ordenados[0] = { ...ordenados[0], inicio: 0 }
   }
-
-  const crudas: SeccionApunte[] = cortes.map((c, i) => ({
+  return ordenados.map((c, i) => ({
     titulo: c.titulo,
     inicio: c.inicio,
-    fin: i + 1 < cortes.length ? cortes[i + 1].inicio : texto.length,
+    fin: i + 1 < ordenados.length ? ordenados[i + 1].inicio : texto.length,
     cubierta: false,
   }))
+}
 
-  // Un título pegado a otro título no es una sección: se junta con la anterior.
+/** Junta los tramos muy cortos con el anterior y respeta el tope de temas. */
+function recortar(secciones: SeccionApunte[], texto: string, minimo: number): SeccionApunte[] {
   const juntas: SeccionApunte[] = []
-  for (const s of crudas) {
+  for (const s of secciones) {
     const previa = juntas[juntas.length - 1]
-    if (previa && s.fin - s.inicio < LARGO_MINIMO) {
+    if (previa && s.fin - s.inicio < minimo) {
       previa.fin = s.fin
       continue
     }
     juntas.push({ ...s })
   }
 
-  if (juntas.length === 0) return porPedazos(texto)
-  return juntas
+  while (juntas.length > MAXIMO_SECCIONES) {
+    let masCorta = 1
+    for (let i = 1; i < juntas.length; i++) {
+      if (juntas[i].fin - juntas[i].inicio < juntas[masCorta].fin - juntas[masCorta].inicio) masCorta = i
+    }
+    juntas[masCorta - 1].fin = juntas[masCorta].fin
+    juntas.splice(masCorta, 1)
+  }
+
+  return juntas.length > 0 ? juntas : porPedazos(texto)
 }
 
 function porPedazos(texto: string): SeccionApunte[] {
   const largo = texto.length
-  const cuantos = Math.max(1, Math.min(8, Math.round(largo / 2500)))
+  const cuantos = Math.max(1, Math.min(MAXIMO_SECCIONES, Math.round(largo / 2500)))
   if (cuantos <= 1) {
     return [{ titulo: 'Todo el apunte', inicio: 0, fin: largo, cubierta: false }]
   }
@@ -101,9 +161,7 @@ function porPedazos(texto: string): SeccionApunte[] {
   for (let i = 0; i < cuantos; i++) {
     const inicio = i === 0 ? 0 : cortarEnParrafo(texto, i * paso)
     const fin = i + 1 === cuantos ? largo : cortarEnParrafo(texto, (i + 1) * paso)
-    if (fin > inicio) {
-      salida.push({ titulo: `Parte ${i + 1}`, inicio, fin, cubierta: false })
-    }
+    if (fin > inicio) salida.push({ titulo: `Parte ${i + 1}`, inicio, fin, cubierta: false })
   }
   return salida
 }
