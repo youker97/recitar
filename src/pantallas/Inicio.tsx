@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
-import { useAjustes, useCursoActivo, useCursos, useDatos, useFuentes, useItems, useRevisiones, useVolcados } from '../datos/hooks'
-import { borrarCurso } from '../datos/repos'
+import { useAjustes, useCursoActivo, useCursos, useDatos, useFuentes, useRevisiones, useVolcados } from '../datos/hooks'
 import { contarPendientes, mazosPorBloque } from '../logica/cola'
 import { calcularRacha } from '../logica/racha'
 import { calcularAlcance, filtrarPorAlcance } from '../logica/alcance'
@@ -13,7 +12,6 @@ export function Inicio() {
   const cursos = useCursos()
   const curso = useCursoActivo()
   const todosLosDatos = useDatos(curso?.id)
-  const items = useItems(curso?.id)
   const fuentes = useFuentes(curso?.id)
   const volcados = useVolcados(curso?.id)
 
@@ -49,11 +47,38 @@ export function Inicio() {
   )
 
   if (cursos.length === 0) {
+    // Sin curso de ejemplo instalado de fábrica, esta es la primera pantalla
+    // que ve alguien. Una sola cosa que hacer.
     return (
-      <div className="vacio">
-        <h1>Recitar</h1>
-        <p>No hay material todavía.</p>
-        <a className="boton boton-fuerte" href="#/importar">Meter material</a>
+      <div>
+        <div className="jugada" style={{ marginTop: '1.5rem' }}>
+          <span className="jugada-rotulo">Para empezar</span>
+          <h2>Trae un apunte tuyo</h2>
+          <p>
+            Un PDF, un .txt, lo que tengas del ramo. Queda guardado en este teléfono y de ahí
+            sale todo lo demás.
+          </p>
+          <a className="boton boton-fuerte" href="#/importar">Meter mi primer apunte</a>
+        </div>
+
+        <section className="seccion">
+          <div className="titulo-seccion"><h2>Cómo funciona</h2></div>
+          <ol className="pasos">
+            <li>
+              <strong>Traes el apunte.</strong> La app lo parte en temas sola.
+            </li>
+            <li>
+              <strong>Preparas un tema.</strong> El vocabulario y las preguntas se las pides a
+              Claude desde la app: copias un pedido, lo pegas allá, traes la respuesta.
+            </li>
+            <li>
+              <strong>Estudias.</strong> Nunca ves la respuesta antes de producir algo, y lo que
+              fallas vuelve solo hasta que deja de fallarse.
+            </li>
+          </ol>
+        </section>
+
+        <Adorno />
       </div>
     )
   }
@@ -62,28 +87,6 @@ export function Inicio() {
 
   return (
     <div>
-      {items.length > 0 && items.every((i) => i.origen === 'ejemplo') && (
-        <div className="hoja hoja-aviso">
-          <strong>Esto es un curso de ejemplo.</strong>
-          <p style={{ margin: '0.3rem 0 0.6rem' }}>
-            Sirve para probar la app, pero no es tu materia y no está revisado. Importa tu apunte y
-            bórralo.
-          </p>
-          <span className="botonera">
-            <a className="boton boton-chico boton-fuerte" href="#/importar">Importar mi apunte</a>
-            <button
-              type="button"
-              className="boton boton-chico boton-peligro"
-              onClick={() => {
-                if (curso && window.confirm('¿Borrar el curso de ejemplo?')) borrarCurso(curso.id)
-              }}
-            >
-              Borrar el ejemplo
-            </button>
-          </span>
-        </div>
-      )}
-
       <section className="seccion">
         <div className={`jugada${jugada.freno ? ' jugada-freno' : ''}`}>
           {ajustes.escudo && <img className="jugada-escudo" src={ajustes.escudo} alt="" />}

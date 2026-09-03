@@ -1,13 +1,57 @@
 import { describe, expect, it } from 'vitest'
 import { aItems, validarPaquete } from '../src/datos/esquema'
-import ejemplo from '../src/datos/ejemplo.json'
+
+/**
+ * Un paquete completo, para probar la validación de punta a punta. Antes esto
+ * era el archivo del curso de ejemplo que la app instalaba sola; ese curso se
+ * eliminó, pero la prueba de un paquete entero sigue haciendo falta.
+ */
+const PAQUETE = {
+  recitar: 1,
+  curso: 'Derecho Civil II',
+  items: [
+    {
+      tipo: 'vf', bloque: 'Obligaciones', ref: 'art. 1489 CC',
+      pregunta: 'La condición resolutoria tácita opera de pleno derecho.',
+      esVerdadera: false,
+      justificacion: 'Requiere sentencia judicial; el 1489 da la opción entre cumplimiento y resolución.',
+      claves: ['sentencia judicial', '1489'],
+      hijos: [
+        { tipo: 'repregunta', pregunta: '¿Y la condición resolutoria ordinaria?', respuesta: 'Esa sí opera de pleno derecho.' },
+        { tipo: 'repregunta', pregunta: '¿Puede el juez negarla?', respuesta: 'No, si se cumplen los requisitos.' },
+      ],
+    },
+    {
+      tipo: 'lista', bloque: 'Acto jurídico', ref: 'art. 1445 CC',
+      titulo: 'Requisitos para obligarse', articulo: 'Art. 1445',
+      elementos: ['Ser legalmente capaz', 'Consentir sin vicios', 'Objeto lícito', 'Causa lícita'],
+    },
+    { tipo: 'articulo', bloque: 'Obligaciones', ref: 'art. 1698 CC', numero: '1698', materia: 'Carga de la prueba' },
+    {
+      tipo: 'textoLegal', bloque: 'Obligaciones', ref: 'art. 1545 CC', numero: '1545',
+      textoLiteral: 'Todo contrato legalmente celebrado es una ley para los contratantes.',
+    },
+    { tipo: 'triaje', bloque: 'Contratos', ref: 'clase 4', enunciado: 'Analice la procedencia de la resolución.', verbo: 'distinciones' },
+    {
+      tipo: 'desarrollo', bloque: 'Contratos', ref: 'clase 5',
+      enunciado: 'Explique la condición resolutoria tácita.',
+      checklist: [{ texto: 'Menciona el art. 1489', claves: ['1489'] }, { texto: 'Distingue de la ordinaria' }],
+    },
+    {
+      tipo: 'alternativas', bloque: 'Obligaciones', ref: 'art. 1567 CC',
+      pregunta: '¿Cuál NO es un modo de extinguir?',
+      opciones: ['La tradición', 'La novación', 'La compensación'],
+      correcta: 0, explicacion: 'La tradición es un modo de adquirir el dominio.',
+    },
+  ],
+}
 
 describe('validación de paquetes', () => {
-  it('acepta el paquete de ejemplo completo', () => {
-    const r = validarPaquete(ejemplo)
+  it('acepta un paquete completo con todos los tipos', () => {
+    const r = validarPaquete(PAQUETE)
     expect(r.errores).toEqual([])
     expect(r.ok).toBe(true)
-    expect(r.curso).toBe('Civil — ejemplo')
+    expect(r.curso).toBe('Derecho Civil II')
     expect(r.items.length).toBeGreaterThan(5)
   })
 
@@ -114,7 +158,7 @@ describe('validación de paquetes', () => {
   })
 
   it('al convertir, las repreguntas quedan colgando del padre y en orden', () => {
-    const r = validarPaquete(ejemplo)
+    const r = validarPaquete(PAQUETE)
     const items = aItems(r.items, 'curso1')
     const padre = items.find((i) => i.tipo === 'vf')!
     const hijos = items.filter((i) => i.padreId === padre.id)

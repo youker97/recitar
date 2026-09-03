@@ -71,12 +71,8 @@ export function Importar() {
   // 'nuevo' significa que este material abre un curso propio.
   const [destino, setDestino] = useState<string>('')
 
-  // El curso de ejemplo es una demo, no la materia de nadie. Si es lo único
-  // que hay, el material que traes abre un curso tuyo en vez de meterse
-  // adentro del ejemplo, que era la forma de terminar estudiando Penal con
-  // los bloques de Civil.
-  const soloEjemplo = items.length > 0 && items.every((i) => i.origen === 'ejemplo')
-  const elegido = destino || (soloEjemplo || !curso ? 'nuevo' : curso.id)
+  // A qué curso va el material. Sin curso todavía, este material abre uno.
+  const elegido = destino || (!curso ? 'nuevo' : curso.id)
   const faltaNombre = elegido === 'nuevo' && nombreCurso.trim().length === 0
   const nombreDestino = elegido === 'nuevo'
     ? nombreCurso.trim()
@@ -355,12 +351,10 @@ export function Importar() {
                 placeholder="Derecho Penal II"
                 onChange={(e) => setNombreCurso(e.target.value)}
               />
-              {soloEjemplo && (
-                <span className="apunte">
-                  Lo único que hay cargado es el curso de ejemplo, que es una demo. Tu material
-                  abre un curso aparte para que no se mezclen.
-                </span>
-              )}
+              <span className="apunte">
+                Un curso por ramo: "Derecho Penal II", "Civil III". Los apuntes de ese ramo van
+                todos adentro y se estudian juntos.
+              </span>
             </label>
           )}
         </div>

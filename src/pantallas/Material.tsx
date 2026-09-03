@@ -26,6 +26,14 @@ export function Material() {
   const fuentes = useFuentes(curso?.id)
   const [busqueda, setBusqueda] = useState('')
   const [nombreNuevo, setNombreNuevo] = useState('')
+  const [nombreCurso, setNombreCurso] = useState('')
+
+  // El campo arranca con el nombre que tiene, y se sigue si cambias de curso.
+  const [ultimoCurso, setUltimoCurso] = useState<string | undefined>(undefined)
+  if (curso && curso.id !== ultimoCurso) {
+    setUltimoCurso(curso.id)
+    setNombreCurso(curso.nombre)
+  }
 
   const porBloque = useMemo(() => {
     const filtro = normalizar(busqueda)
@@ -41,6 +49,17 @@ export function Material() {
   }, [items, busqueda])
 
   const hijosDe = (id: string) => items.filter((i) => i.padreId === id)
+
+  /**
+   * Cambiar el nombre de un curso. Hace falta de verdad: el curso de ejemplo
+   * se llamaba "Civil — ejemplo" y muchos apuntes propios terminaron adentro,
+   * así que quedan cursos con nombre equivocado y material bueno.
+   */
+  async function renombrar() {
+    const nombre = nombreCurso.trim()
+    if (!curso || !nombre || nombre === curso.nombre) return
+    await db.cursos.put({ ...curso, nombre, actualizadoEn: Date.now() })
+  }
 
   async function nuevoCurso() {
     const nombre = nombreNuevo.trim()
@@ -63,15 +82,26 @@ export function Material() {
 
       <div className="grilla-dos seccion">
         <label className="campo">
-          <span>Curso</span>
-          <select
-            value={curso?.id ?? ''}
-            onChange={(e) => guardarAjustes({ cursoActivoId: e.target.value })}
-          >
-            {cursos.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
+          <span>Cómo se llama este curso</span>
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <input
+              type="text"
+              value={nombreCurso}
+              placeholder="Ej: Derecho Penal II"
+              onChange={(e) => setNombreCurso(e.target.value)}
+            />
+            <button
+              type="button"
+              className="boton"
+              disabled={!curso || !nombreCurso.trim() || nombreCurso.trim() === curso.nombre}
+              onClick={renombrar}
+            >
+              Cambiar
+            </button>
+          </div>
+          <span className="apunte">
+            El curso se elige arriba, en la cinta. Acá se le cambia el nombre.
+          </span>
         </label>
         <label className="campo">
           <span>Curso nuevo</span>

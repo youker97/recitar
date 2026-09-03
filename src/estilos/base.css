@@ -789,3 +789,29 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 .mazo-cuenta-cero { color: var(--tinta-tenue); opacity: 0.5; }
 .mazo-errores { border-left-color: var(--rojo); }
 .mazo-errores .mazo-cuenta { color: var(--rojo); }
+
+/* ---------- los tres pasos de la portada ---------- */
+
+.pasos { counter-reset: paso; list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.pasos li {
+  position: relative;
+  padding: 0.7rem 0.9rem 0.7rem 2.6rem;
+  border: 1px solid var(--linea);
+  border-radius: var(--curva);
+  background: var(--papel-alto);
+  box-shadow: var(--sombra-1);
+  font-size: 0.92rem;
+  color: var(--tinta-suave);
+}
+.pasos li::before {
+  counter-increment: paso;
+  content: counter(paso);
+  position: absolute;
+  left: 0.85rem;
+  top: 0.72rem;
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--oro);
+}
+.pasos strong { color: var(--tinta); }
