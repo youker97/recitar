@@ -28,6 +28,10 @@ jobs:
       - run: npm ci
       - run: npm run prueba
       - run: npm run build
+      # Deja GitHub Pages configurado solo: no hay que activarlo a mano.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
