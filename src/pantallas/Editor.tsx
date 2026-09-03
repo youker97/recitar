@@ -19,6 +19,7 @@ function separarClaves(texto: string): string[] | undefined {
 interface Borrador {
   tipo: TipoItem
   bloque: string
+  seccion: string
   ref: string
   // campos de todos los tipos, se usan los que correspondan
   pregunta: string
@@ -43,7 +44,7 @@ interface Borrador {
 }
 
 const VACIO: Borrador = {
-  tipo: 'vf', bloque: '', ref: '',
+  tipo: 'vf', bloque: '', seccion: '', ref: '',
   pregunta: '', esVerdadera: true, justificacion: '', respuesta: '',
   titulo: '', articulo: '', elementos: '', numero: '', materia: '', cuerpo: '',
   textoLiteral: '', enunciado: '', verbo: 'definir', checklist: '', minutosSugeridos: '',
@@ -51,7 +52,7 @@ const VACIO: Borrador = {
 }
 
 function aBorrador(item: Item): Borrador {
-  const b = { ...VACIO, tipo: item.tipo, bloque: item.bloque, ref: item.ref }
+  const b = { ...VACIO, tipo: item.tipo, bloque: item.bloque, seccion: item.seccion ?? '', ref: item.ref }
   const d = item.datos as unknown as Record<string, unknown>
   switch (item.tipo) {
     case 'vf': {
@@ -104,7 +105,12 @@ function aBorrador(item: Item): Borrador {
 }
 
 function aBruto(b: Borrador): Record<string, unknown> {
-  const base = { tipo: b.tipo, bloque: b.bloque.trim(), ref: b.ref.trim() }
+  const base = {
+    tipo: b.tipo,
+    bloque: b.bloque.trim(),
+    seccion: b.seccion.trim() || undefined,
+    ref: b.ref.trim(),
+  }
   switch (b.tipo) {
     case 'vf':
       return {
@@ -160,6 +166,7 @@ export function Editor() {
   const [guardado, setGuardado] = useState(false)
 
   const bloquesUsados = [...new Set(items.map((i) => i.bloque).filter(Boolean))].sort()
+  const seccionesUsadas = [...new Set(items.map((i) => i.seccion).filter(Boolean))].sort() as string[]
   const hijos = id ? items.filter((i) => i.padreId === id).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) : []
 
   useEffect(() => {
@@ -198,11 +205,20 @@ export function Editor() {
     const ahora = Date.now()
     const datos = validado.items[0].datos
     const item: Item = original
-      ? { ...original, bloque: borrador.bloque.trim(), tipo: borrador.tipo, ref: borrador.ref.trim(), datos, actualizadoEn: ahora }
+      ? {
+          ...original,
+          bloque: borrador.bloque.trim(),
+          seccion: borrador.seccion.trim() || undefined,
+          tipo: borrador.tipo,
+          ref: borrador.ref.trim(),
+          datos,
+          actualizadoEn: ahora,
+        }
       : {
           id: nuevoId(),
           cursoId: curso.id,
           bloque: borrador.bloque.trim(),
+          seccion: borrador.seccion.trim() || undefined,
           tipo: borrador.tipo,
           datos,
           ref: borrador.ref.trim(),
@@ -258,6 +274,19 @@ export function Editor() {
           />
           <datalist id="bloques-usados">
             {bloquesUsados.map((b) => <option key={b} value={b} />)}
+          </datalist>
+        </label>
+        <label className="campo">
+          <span>Sección (subtema del apunte)</span>
+          <input
+            type="text"
+            list="secciones-usadas"
+            value={borrador.seccion}
+            placeholder="Ej: Causales de justificación"
+            onChange={(e) => cambiar('seccion', e.target.value)}
+          />
+          <datalist id="secciones-usadas">
+            {seccionesUsadas.map((x) => <option key={x} value={x} />)}
           </datalist>
         </label>
         <label className="campo">

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useAjustes, useCursoActivo } from '../datos/hooks'
+import { useAjustes, useCursoActivo, useFuentes } from '../datos/hooks'
 import { cargarDatos, registrarRespuesta } from '../datos/repos'
 import type { Confianza, DatosAlternativas, DatosArticulo, DatosLista, DatosTextoLegal, DatosTriaje, DatosVF, Item, ModoEstudio, Verbo } from '../datos/tipos'
 import { NOMBRE_VERBO } from '../datos/tipos'
 import { intercalar } from '../logica/cola'
+import { calcularAlcance, filtrarPorAlcance } from '../logica/alcance'
 import { generarAlternativas, puedeGenerarse } from '../logica/generador'
 import { evaluarRespuesta, seCorrigeSola, type RespuestaEnsayo, type ResultadoEnsayo } from '../logica/evaluar'
 import { prepararHuecos } from '../logica/huecos'
@@ -36,7 +37,12 @@ const MODO_POR_TIPO: Partial<Record<Item['tipo'], ModoEstudio>> = {
 export function Ensayo() {
   const curso = useCursoActivo()
   const ajustes = useAjustes()
-  const datos = useLiveQuery(() => cargarDatos(curso?.id), [curso?.id])
+  const todosLosDatos = useLiveQuery(() => cargarDatos(curso?.id), [curso?.id])
+  const fuentes = useFuentes(curso?.id)
+  const datos = useMemo(
+    () => (todosLosDatos ? filtrarPorAlcance(todosLosDatos, calcularAlcance(fuentes)).dentro : undefined),
+    [todosLosDatos, fuentes],
+  )
 
   const [paso, setPaso] = useState<Paso>('armar')
   const [bloquesElegidos, setBloquesElegidos] = useState<string[]>([])

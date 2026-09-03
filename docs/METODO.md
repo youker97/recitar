@@ -83,6 +83,21 @@ La fórmula es la de FSRS: `R(t,S) = (1 + F·t/(9S))^C`, con `F = 19/81` y
 `C = -0.5`, donde `S` es la estabilidad del recuerdo en días y `t` los días
 transcurridos desde el último repaso.
 
+## 8. Una sola próxima jugada, que a veces es frenar
+
+Abrir un apunte de noventa páginas y decidir por dónde empezar es donde se
+muere la mayoría de las sesiones. La app corta esa decisión: muestra **una**
+cosa que hacer ahora.
+
+Y a diferencia de un plan de estudio normal, puede decirte que **no avances**:
+si el tema que acabas de cubrir quedó bajo, seguir agregando materia nueva solo
+acumula temas a medias. Un plan que solo empuja se siente productivo y no lo es.
+
+**En la app:** la tarjeta "Lo próximo" en la pantalla de inicio, y el **mapa**,
+donde marcas hasta dónde llegó el curso. Lo que viene después existe en el
+archivo pero no entra a las sesiones: preguntar por materia que nunca viste no
+enseña nada y llena el registro de errores de ruido.
+
 ## Lo que falta
 
 Dos cosas que la evidencia respalda y que todavía no están:

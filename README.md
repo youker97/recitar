@@ -25,6 +25,10 @@ el oral el profesor siempre sigue raspando debajo de la primera respuesta.
   puede evitar.
 - **Fechas de prueba:** días que faltan y cuánto toca hoy para llegar, repartido
   en vez de acumulado al final.
+- **Una sola próxima jugada.** La pantalla de inicio dice qué hacer ahora, y
+  puede decirte que no avances si el tema anterior quedó a medias.
+- **Mapa de la materia.** Cada apunte se parte por sus propios temas y tú marcas
+  hasta dónde llegó el curso. Lo que viene después no entra a las sesiones.
 - **Racha diaria**: días seguidos cumpliendo tu meta, con calendario y récord.
   No es un adorno: la repetición espaciada solo funciona si vuelves mañana.
 - **Cuánto dominas cada materia**, en porcentaje. No cuenta lo que viste, sino

@@ -13,11 +13,13 @@ import { Estadisticas } from './pantallas/Estadisticas'
 import { Ensayo } from './pantallas/Ensayo'
 import { Volcado } from './pantallas/Volcado'
 import { Pasada } from './pantallas/Pasada'
+import { Mapa } from './pantallas/Mapa'
 import { Sesion } from './modos/Sesion'
 
 const NAVEGACION = [
   { ruta: '/', texto: 'Hoy' },
   { ruta: '/errores', texto: 'Errores' },
+  { ruta: '/mapa', texto: 'Mapa' },
   { ruta: '/material', texto: 'Material' },
   { ruta: '/importar', texto: 'Importar' },
   { ruta: '/pruebas', texto: 'Pruebas' },
@@ -45,6 +47,7 @@ export default function App() {
     case '/ensayo': pantalla = <Ensayo />; break
     case '/volcado': pantalla = <Volcado />; break
     case '/pasada': pantalla = <Pasada />; break
+    case '/mapa': pantalla = <Mapa />; break
     case '/material': pantalla = <Material />; break
     case '/editor': pantalla = <Editor />; break
     case '/pruebas': pantalla = <Evaluaciones />; break

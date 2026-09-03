@@ -1,12 +1,15 @@
 import { useMemo } from 'react'
-import { useAjustes, useCursoActivo, useCursos, useDatos, useEvaluaciones, useItems, useRevisiones } from '../datos/hooks'
+import { useAjustes, useCursoActivo, useCursos, useDatos, useEvaluaciones, useFuentes, useItems, useRevisiones, useVolcados } from '../datos/hooks'
 import { guardarAjustes } from '../datos/db'
+import { borrarCurso } from '../datos/repos'
 import { contarPendientes } from '../logica/cola'
 import { cargaDeHoy, formatearFecha } from '../logica/plan'
 import { generarConsejos } from '../logica/consejos'
 import { resumenDeItem } from '../logica/resumen'
 import { calcularRacha } from '../logica/racha'
 import { prontitudEn } from '../logica/prontitud'
+import { calcularAlcance, filtrarPorAlcance } from '../logica/alcance'
+import { proximaJugada } from '../logica/siguiente'
 import { dominioGeneral, dominioPorBloque } from '../logica/dominio'
 import { Racha } from '../componentes/Racha'
 import { ListaDominio } from '../componentes/Dominio'
@@ -15,8 +18,21 @@ export function Inicio() {
   const ajustes = useAjustes()
   const cursos = useCursos()
   const curso = useCursoActivo()
-  const datos = useDatos(curso?.id)
+  const todosLosDatos = useDatos(curso?.id)
   const items = useItems(curso?.id)
+  const fuentes = useFuentes(curso?.id)
+  const volcados = useVolcados(curso?.id)
+
+  // Lo que el curso todavía no pasa no entra a las sesiones.
+  const alcance = useMemo(() => calcularAlcance(fuentes), [fuentes])
+  const { dentro: datos, sinPasada, fuera } = useMemo(
+    () => filtrarPorAlcance(todosLosDatos, alcance),
+    [todosLosDatos, alcance],
+  )
+  const jugada = useMemo(
+    () => proximaJugada({ datos, fuentes, volcados, ajustes }),
+    [datos, fuentes, volcados, ajustes],
+  )
   const evaluaciones = useEvaluaciones(curso?.id)
   const revisiones = useRevisiones(curso?.id, 400)
 
@@ -78,7 +94,46 @@ export function Inicio() {
         </label>
       )}
 
+      {items.length > 0 && items.every((i) => i.origen === 'ejemplo') && (
+        <div className="hoja hoja-aviso">
+          <strong>Esto es un curso de ejemplo.</strong>
+          <p style={{ margin: '0.3rem 0 0.6rem' }}>
+            Sirve para probar la app, pero no es tu materia y no está revisado. Importa tu apunte y
+            bórralo.
+          </p>
+          <span className="botonera">
+            <a className="boton boton-chico boton-fuerte" href="#/importar">Importar mi apunte</a>
+            <button
+              type="button"
+              className="boton boton-chico boton-peligro"
+              onClick={() => {
+                if (curso && window.confirm('¿Borrar el curso de ejemplo?')) borrarCurso(curso.id)
+              }}
+            >
+              Borrar el ejemplo
+            </button>
+          </span>
+        </div>
+      )}
+
+      <section className="seccion">
+        <div className={`jugada${jugada.freno ? ' jugada-freno' : ''}`}>
+          <span className="jugada-rotulo">{jugada.freno ? 'Alto' : 'Lo próximo'}</span>
+          <h2>{jugada.titulo}</h2>
+          <p>{jugada.texto}</p>
+          <a className="boton boton-fuerte" href={jugada.ruta}>{jugada.etiqueta}</a>
+        </div>
+      </section>
+
       <Racha racha={racha} />
+
+      {(sinPasada > 0 || fuera > 0) && (
+        <p className="apunte">
+          {sinPasada > 0 && `${sinPasada} ítems esperan su primera pasada. `}
+          {fuera > 0 && `${fuera} son de materia que el curso todavía no pasa. `}
+          <a href="#/mapa">Ver el mapa</a>
+        </p>
+      )}
 
       <section className="seccion">
         <div className="titulo-seccion">

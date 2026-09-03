@@ -18,8 +18,9 @@ y qué campo está mal.
 
 | Campo | Obligatorio | Qué es |
 |---|---|---|
-| `tipo` | sí | uno de los siete tipos de abajo |
-| `bloque` | sí (lo heredan las repreguntas de su padre) | la materia: "Obligaciones", "Recursos procesales" |
+| `tipo` | sí | uno de los tipos de abajo |
+| `bloque` | sí (lo heredan las repreguntas de su padre) | el tema grande: "Antijuridicidad", "Obligaciones" |
+| `seccion` | no, pero conviene | el subtema del apunte: "Causales de justificación". Con esto la app sabe qué materia ya pasaste |
 | `ref` | no, pero conviene | de dónde sale: "art. 1489 CC", "apunte cl. 7" |
 | `hijos` | no | lista de repreguntas encadenadas (pueden tener sus propios `hijos`) |
 

@@ -7,6 +7,18 @@ import { NOMBRE_TIPO, type Item } from '../datos/tipos'
 import { normalizar } from '../logica/comparar'
 import { ir } from '../rutas'
 
+/** Dentro de cada tema, los ítems se agrupan por el subtema del apunte. */
+function agruparPorSeccion(lista: Item[]): [string, Item[]][] {
+  const mapa = new Map<string, Item[]>()
+  for (const item of lista) {
+    const clave = item.seccion ?? ''
+    const previos = mapa.get(clave) ?? []
+    previos.push(item)
+    mapa.set(clave, previos)
+  }
+  return [...mapa.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'))
+}
+
 export function Material() {
   const cursos = useCursos()
   const curso = useCursoActivo()
@@ -97,7 +109,15 @@ export function Material() {
               <span className="lado numeral">{lista.length}</span>
             </div>
             <ul className="lista-limpia">
-              {lista.map((item) => {
+              {agruparPorSeccion(lista).map(([seccion, deLaSeccion]) => (
+                <li key={seccion}>
+                  {seccion && (
+                    <div className="apunte" style={{ marginTop: '0.6rem', fontWeight: 600 }}>
+                      {seccion}
+                    </div>
+                  )}
+                  <ul className="lista-limpia">
+                    {deLaSeccion.map((item) => {
                 const hijos = hijosDe(item.id)
                 return (
                   <li key={item.id} className="renglon">
@@ -138,8 +158,11 @@ export function Material() {
                       </button>
                     </div>
                   </li>
-                )
-              })}
+                      )
+                    })}
+                  </ul>
+                </li>
+              ))}
             </ul>
           </section>
         ))

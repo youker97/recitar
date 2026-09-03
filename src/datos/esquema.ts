@@ -14,6 +14,7 @@ export interface ErrorImportacion {
 
 export interface ItemEntrante {
   bloque: string
+  seccion?: string
   tipo: TipoItem
   ref: string
   datos: DatosItem
@@ -63,6 +64,7 @@ function validarItem(
   donde: string,
   errores: ErrorImportacion[],
   bloquePadre: string,
+  seccionPadre?: string,
 ): ItemEntrante | null {
   if (typeof bruto !== 'object' || bruto === null) {
     errores.push({ donde, mensaje: 'no es un objeto' })
@@ -85,6 +87,7 @@ function validarItem(
     return null
   }
   const ref = esTexto(o.ref) ? o.ref.trim() : ''
+  const seccion = esTexto(o.seccion) ? o.seccion.trim() : seccionPadre
 
   let datos: DatosItem | null = null
   const falta = (campo: string, detalle = '') =>
@@ -209,13 +212,13 @@ function validarItem(
       errores.push({ donde, mensaje: '"hijos" debe ser una lista de repreguntas' })
     } else {
       o.hijos.forEach((h, k) => {
-        const hijo = validarItem(h, `${donde} › repregunta ${k + 1}`, errores, bloque)
+        const hijo = validarItem(h, `${donde} › repregunta ${k + 1}`, errores, bloque, seccion)
         if (hijo) hijos.push(hijo)
       })
     }
   }
 
-  return { bloque, tipo: tipo as TipoItem, ref, datos, hijos }
+  return { bloque, seccion, tipo: tipo as TipoItem, ref, datos, hijos }
 }
 
 export function validarPaquete(bruto: unknown): ResultadoValidacion {
@@ -283,6 +286,7 @@ export function aItems(
         id: nuevoId(),
         cursoId,
         bloque: entrante.bloque,
+        seccion: entrante.seccion,
         tipo: entrante.tipo,
         datos: entrante.datos,
         ref: entrante.ref,

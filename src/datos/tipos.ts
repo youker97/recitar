@@ -110,7 +110,10 @@ export type OrigenItem = 'manual' | 'json' | 'md' | 'txt' | 'pdf' | 'ejemplo'
 export interface Item {
   id: string
   cursoId: string
+  /** El tema grande: "Antijuridicidad", "Obligaciones". */
   bloque: string
+  /** El subtema dentro del apunte: "Causales de justificación". */
+  seccion?: string
   tipo: TipoItem
   datos: DatosItem
   ref: string
@@ -228,6 +231,15 @@ export interface Grabacion {
  * El texto original de un apunte, guardado para poder darle la primera pasada
  * (leer con preguntas antes y volcado después) y no solo estudiar las fichas.
  */
+/** Un tramo del apunte: su título y dónde empieza y termina en el texto. */
+export interface SeccionApunte {
+  titulo: string
+  inicio: number
+  fin: number
+  /** Ya le diste la primera pasada. */
+  cubierta: boolean
+}
+
 export interface Fuente {
   id: string
   cursoId: string
@@ -235,7 +247,14 @@ export interface Fuente {
   titulo: string
   texto: string
   creadoEn: number
-  /** Hasta qué trozo llegó la primera pasada. */
+  /** El mapa del apunte. */
+  secciones: SeccionApunte[]
+  /**
+   * Hasta qué sección llegó la materia del curso. Lo que viene después existe
+   * en el archivo pero todavía no es tuyo: no entra a las sesiones.
+   */
+  hasta: number
+  /** Hasta qué trozo llegó la primera pasada (compatibilidad). */
   avance: number
   terminada: boolean
 }

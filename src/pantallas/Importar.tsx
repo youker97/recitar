@@ -6,6 +6,7 @@ import { aItems, validarPaquete, type ResultadoValidacion } from '../datos/esque
 import { convertirApunte } from '../importar/texto'
 import type { PaginaPdf } from '../importar/pdf'
 import { armarPedido, copiar, limpiarRespuesta, partirTexto } from '../importar/claude'
+import { detectarSecciones } from '../logica/mapa'
 import { NOMBRE_TIPO, type OrigenItem, type TipoItem } from '../datos/tipos'
 import { ir } from '../rutas'
 
@@ -147,6 +148,7 @@ export function Importar() {
       const cuenta = new Map<string, number>()
       for (const i of nuevos) cuenta.set(i.bloque, (cuenta.get(i.bloque) ?? 0) + 1)
       const bloquePrincipal = [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Sin bloque'
+      const secciones = detectarSecciones(fuente)
       await db.fuentes.put({
         id: nuevoId('f'),
         cursoId,
@@ -154,6 +156,9 @@ export function Importar() {
         titulo: fuente.split('\n').find((l) => l.trim().length > 3)?.slice(0, 70).trim() ?? 'Apunte',
         texto: fuente,
         creadoEn: Date.now(),
+        secciones,
+        // Al principio todo el apunte está en alcance; se ajusta en el mapa.
+        hasta: secciones.length - 1,
         avance: 0,
         terminada: false,
       })

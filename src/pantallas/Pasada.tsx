@@ -1,120 +1,164 @@
 import { useEffect, useMemo, useState } from 'react'
 import { db } from '../datos/db'
 import { useCursoActivo, useFuentes, useItems } from '../datos/hooks'
-import type { Fuente, Item } from '../datos/tipos'
+import type { Fuente, Item, SeccionApunte } from '../datos/tipos'
 import { partirTexto } from '../importar/claude'
+import { detectarSecciones, textoDeSeccion } from '../logica/mapa'
 import { conceptosDeBloque, revisarVolcado } from '../logica/conceptos'
 import { contarPalabras } from '../logica/corrector'
-import { contiene } from '../logica/comparar'
+import { contiene, normalizar } from '../logica/comparar'
 import { resumenDeItem } from '../logica/resumen'
-import { ir } from '../rutas'
+import { ir, useUbicacion } from '../rutas'
 
 type Etapa = 'predecir' | 'leer' | 'recordar' | 'comparar'
 
 const LARGO_TROZO = 1500
 
+interface Paso {
+  seccion: SeccionApunte
+  indiceSeccion: number
+  texto: string
+  ultimoDeLaSeccion: boolean
+}
+
 /**
- * Primera pasada: la única parte de la app donde se lee.
- *
- * El orden importa. Primero se intenta responder sin saber (eso se llama
- * pretesting: equivocarse antes de leer hace que el texto se agarre mejor
- * después). Después se lee. Y después se cierra y se escribe lo que quedó,
- * que es donde de verdad se aprende.
+ * Primera pasada: lo único de la app donde se lee, y no se lee de corrido.
+ * Por cada trozo: intentar sin saber, leer, cerrar y escribir lo que quedó.
+ * Se avanza tema por tema, no cada tantas letras.
  */
 export function Pasada() {
+  const { params } = useUbicacion()
   const curso = useCursoActivo()
   const fuentes = useFuentes(curso?.id)
   const items = useItems(curso?.id)
-  const [fuenteId, setFuenteId] = useState<string | null>(null)
-  const [indice, setIndice] = useState(0)
+  const [fuenteId, setFuenteId] = useState<string | null>(params.get('fuente'))
+  const [paso, setPaso] = useState(0)
   const [etapa, setEtapa] = useState<Etapa>('predecir')
   const [prediccion, setPrediccion] = useState('')
   const [recuerdo, setRecuerdo] = useState('')
 
   const fuente = fuentes.find((f) => f.id === fuenteId) ?? null
-  const trozos = useMemo(
-    () => (fuente ? partirTexto(fuente.texto, LARGO_TROZO) : []),
-    [fuente],
-  )
-  const trozo = trozos[indice]
+
+  const pasos = useMemo<Paso[]>(() => {
+    if (!fuente) return []
+    const secciones = mapaDe(fuente)
+    const tope = Number.isInteger(fuente.hasta) ? fuente.hasta : secciones.length - 1
+    return secciones.slice(0, tope + 1).flatMap((seccion, indiceSeccion) => {
+      const trozos = partirTexto(textoDeSeccion(fuente.texto, seccion), LARGO_TROZO)
+      return trozos.map((t, i) => ({
+        seccion,
+        indiceSeccion,
+        texto: t.texto,
+        ultimoDeLaSeccion: i === trozos.length - 1,
+      }))
+    })
+  }, [fuente])
+
+  const actual = pasos[paso]
 
   const conceptos = useMemo(
     () => (fuente ? conceptosDeBloque(items.filter((i) => i.bloque === fuente.bloque)) : []),
     [items, fuente],
   )
-
-  // Los conceptos que de verdad están en este trozo: contra esos se compara.
   const delTrozo = useMemo(
-    () => (trozo ? conceptos.filter((c) => contiene(trozo.texto, c.termino)) : []),
-    [conceptos, trozo],
+    () => (actual ? conceptos.filter((c) => contiene(actual.texto, c.termino)) : []),
+    [conceptos, actual],
   )
-
-  // Preguntas de antes: ítems cuyo contenido aparece en este trozo.
   const preguntas = useMemo(() => {
-    if (!trozo) return [] as Item[]
-    const candidatos = items.filter(
-      (i) => !i.padreId && i.bloque === fuente?.bloque && delTrozo.some((c) => c.itemId === i.id),
-    )
-    return candidatos.slice(0, 2)
-  }, [items, trozo, fuente, delTrozo])
+    if (!actual) return [] as Item[]
+    return items
+      .filter((i) => !i.padreId && delTrozo.some((c) => c.itemId === i.id))
+      .slice(0, 2)
+  }, [items, actual, delTrozo])
 
+  // Al abrir un apunte se parte en la primera sección sin cubrir.
   useEffect(() => {
-    if (!fuente) return
-    if (fuente.avance > 0 && indice === 0) setIndice(Math.min(fuente.avance, trozos.length - 1))
+    if (!fuente || pasos.length === 0) return
+    const primero = pasos.findIndex((p) => !p.seccion.cubierta)
+    setPaso(primero === -1 ? 0 : primero)
+    setEtapa('predecir')
+    setPrediccion('')
+    setRecuerdo('')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fuenteId])
+  }, [fuenteId, pasos.length])
 
-  async function guardarAvance(nuevo: number, terminada = false) {
+  async function marcarCubierta(indiceSeccion: number) {
     if (!fuente) return
-    await db.fuentes.put({ ...fuente, avance: nuevo, terminada })
+    const secciones = mapaDe(fuente).map((s, i) => (i === indiceSeccion ? { ...s, cubierta: true } : s))
+    await db.fuentes.put({
+      ...fuente,
+      secciones,
+      avance: paso + 1,
+      terminada: secciones.every((s) => s.cubierta),
+    })
+    // Los ítems de esa sección quedan disponibles para las sesiones.
+    const titulo = normalizar(secciones[indiceSeccion].titulo)
+    const suyos = items.filter((i) => i.seccion && normalizar(i.seccion) === titulo)
+    if (suyos.length > 0) await db.items.bulkPut(suyos)
   }
 
-  function siguienteTrozo() {
-    const nuevo = indice + 1
+  async function siguiente() {
+    if (!actual) return
+    if (actual.ultimoDeLaSeccion) await marcarCubierta(actual.indiceSeccion)
     setPrediccion('')
     setRecuerdo('')
     setEtapa('predecir')
-    if (nuevo >= trozos.length) {
-      guardarAvance(trozos.length, true)
-      setFuenteId(null)
-      setIndice(0)
+    if (paso + 1 >= pasos.length) {
       ir('/')
       return
     }
-    setIndice(nuevo)
-    guardarAvance(nuevo)
+    setPaso(paso + 1)
   }
 
   if (!curso) {
     return <div className="vacio"><p>Primero mete material.</p><a className="boton" href="#/importar">Importar</a></div>
   }
 
-  // ---------- elegir apunte ----------
   if (!fuente) {
     return (
       <div>
         <div className="titulo-seccion"><h1>Primera pasada</h1></div>
         <p className="apunte">
-          Para lo que todavía no entiendes. No es leer: por cada trozo del apunte primero intentas
-          responder sin saber, después lees, y después cierras y escribes lo que quedó. Equivocarse
-          antes de leer hace que el texto se agarre mucho mejor.
+          Para lo que todavía no entiendes. No es leer: por cada trozo primero intentas responder sin
+          saber, después lees, y después cierras el texto y escribes lo que quedó. Equivocarse antes
+          de leer hace que el texto se agarre mucho mejor.
         </p>
         {fuentes.length === 0 ? (
           <div className="vacio">
             <p>No hay apuntes guardados todavía.</p>
-            <p className="apunte">
-              Cuando importes un PDF o un apunte, el texto queda guardado acá para poder darle esta
-              pasada.
-            </p>
+            <p className="apunte">Cuando importes un PDF o un apunte, el texto queda acá.</p>
             <a className="boton" href="#/importar">Importar un apunte</a>
           </div>
         ) : (
           <div className="opciones seccion">
-            {fuentes.map((f) => (
-              <BotonFuente key={f.id} fuente={f} onElegir={() => { setFuenteId(f.id); setIndice(0); setEtapa('predecir') }} />
-            ))}
+            {fuentes.map((f) => {
+              const secciones = mapaDe(f)
+              const cubiertas = secciones.filter((s) => s.cubierta).length
+              return (
+                <button key={f.id} type="button" className="opcion" onClick={() => setFuenteId(f.id)}>
+                  <span>
+                    <strong>{f.titulo}</strong>
+                    <small>
+                      {f.bloque} · {secciones.length} temas · {cubiertas} con la pasada hecha
+                    </small>
+                  </span>
+                </button>
+              )
+            })}
           </div>
         )}
+        <p style={{ marginTop: '1rem' }}>
+          <a className="boton boton-chico" href="#/mapa">Ver el mapa de mis apuntes</a>
+        </p>
+      </div>
+    )
+  }
+
+  if (!actual) {
+    return (
+      <div className="vacio">
+        <p>Este apunte ya está cubierto entero.</p>
+        <a className="boton" href="#/mapa">Ver el mapa</a>
       </div>
     )
   }
@@ -124,11 +168,11 @@ export function Pasada() {
   return (
     <div>
       <div className="barra-progreso" aria-hidden="true">
-        <div style={{ width: `${(indice / trozos.length) * 100}%` }} />
+        <div style={{ width: `${(paso / pasos.length) * 100}%` }} />
       </div>
       <div className="titulo-seccion">
-        <h2>{fuente.bloque}</h2>
-        <span className="lado numeral">Trozo {indice + 1} de {trozos.length}</span>
+        <h2>{actual.seccion.titulo}</h2>
+        <span className="lado numeral">{paso + 1} de {pasos.length}</span>
       </div>
 
       {etapa === 'predecir' && (
@@ -171,7 +215,7 @@ export function Pasada() {
         <>
           <h3>Lee</h3>
           <p className="apunte">Una vez, con calma. Después vas a tener que escribirlo sin mirar.</p>
-          <div className="estudio" style={{ whiteSpace: 'pre-wrap' }}>{trozo.texto}</div>
+          <div className="estudio" style={{ whiteSpace: 'pre-wrap' }}>{actual.texto}</div>
           <div className="pie-fijo">
             <button type="button" className="boton boton-fuerte boton-ancho" onClick={() => setEtapa('recordar')}>
               Listo, cerrar el texto
@@ -183,9 +227,7 @@ export function Pasada() {
       {etapa === 'recordar' && (
         <>
           <h3>Ahora sin mirar</h3>
-          <p className="apunte">
-            Escribe todo lo que quedó de ese trozo. Con tus palabras, en cualquier orden.
-          </p>
+          <p className="apunte">Escribe todo lo que quedó. Con tus palabras, en cualquier orden.</p>
           <textarea
             className="serif"
             rows={10}
@@ -212,8 +254,7 @@ export function Pasada() {
           <h3>Qué quedó</h3>
           {resultado.total === 0 ? (
             <p className="apunte">
-              Este trozo todavía no tiene conceptos asociados. Compara tú mismo con el texto de
-              arriba.
+              Este trozo todavía no tiene conceptos asociados. Compara tú mismo con el texto.
             </p>
           ) : (
             <>
@@ -241,12 +282,16 @@ export function Pasada() {
 
           <details className="seccion">
             <summary className="apunte">Volver a ver el texto</summary>
-            <div className="estudio" style={{ whiteSpace: 'pre-wrap' }}>{trozo.texto}</div>
+            <div className="estudio" style={{ whiteSpace: 'pre-wrap' }}>{actual.texto}</div>
           </details>
 
           <div className="pie-fijo">
-            <button type="button" className="boton boton-fuerte boton-ancho" onClick={siguienteTrozo}>
-              {indice + 1 >= trozos.length ? 'Terminar la pasada' : 'Siguiente trozo'}
+            <button type="button" className="boton boton-fuerte boton-ancho" onClick={siguiente}>
+              {paso + 1 >= pasos.length
+                ? 'Terminar la pasada'
+                : actual.ultimoDeLaSeccion
+                  ? 'Tema listo, seguir al siguiente'
+                  : 'Siguiente trozo'}
             </button>
           </div>
         </>
@@ -255,21 +300,8 @@ export function Pasada() {
   )
 }
 
-function BotonFuente({ fuente, onElegir }: { fuente: Fuente; onElegir: () => void }) {
-  const trozos = Math.max(1, Math.ceil(fuente.texto.length / LARGO_TROZO))
-  return (
-    <button type="button" className="opcion" onClick={onElegir}>
-      <span>
-        <strong>{fuente.titulo}</strong>
-        <small>
-          {fuente.bloque} · {trozos} trozos
-          {fuente.terminada
-            ? ' · pasada terminada'
-            : fuente.avance > 0
-              ? ` · vas en el ${fuente.avance + 1}`
-              : ''}
-        </small>
-      </span>
-    </button>
-  )
+/** Apuntes guardados antes del mapa: se les calcula al vuelo. */
+export function mapaDe(fuente: Fuente): SeccionApunte[] {
+  if (fuente.secciones?.length) return fuente.secciones
+  return detectarSecciones(fuente.texto)
 }

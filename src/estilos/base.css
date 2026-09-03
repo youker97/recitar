@@ -421,3 +421,23 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 .accion span { display: block; font-size: 0.8rem; color: var(--tinta-tenue); margin-top: 0.1rem; }
 
 @media (min-width: 36rem) { .acciones { grid-template-columns: 1fr 1fr; } }
+
+/* ---------- la próxima jugada ---------- */
+
+.jugada {
+  border: 1px solid var(--linea-fuerte);
+  border-top: 3px solid var(--tinta);
+  background: var(--papel-alto);
+  padding: 1rem;
+  box-shadow: 0 1px 0 var(--sombra);
+}
+.jugada h2 { font-family: var(--serif); font-size: 1.3rem; margin: 0.35rem 0 0.4rem; }
+.jugada p { margin: 0 0 0.85rem; color: var(--tinta-suave); }
+.jugada-rotulo {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+}
+.jugada-freno { border-top-color: var(--rojo); background: var(--rojo-suave); }
+.jugada-freno .jugada-rotulo { color: var(--rojo); }

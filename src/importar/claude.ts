@@ -52,7 +52,10 @@ const ESQUEMA = `{
   "items": [ ... ]
 }
 
-Cada ítem es un objeto con "tipo", "bloque", "ref" y los campos de su tipo:
+Cada ítem es un objeto con "tipo", "bloque", "seccion", "ref" y los campos de su tipo.
+"bloque" es el tema grande (la unidad del curso) y "seccion" es el subtema exacto del apunte del
+que salió, copiado tal cual del título que aparece en el texto: con eso la app sabe qué materia ya
+pasaste y qué no.
 
 - {"tipo":"vf","bloque":"","ref":"","pregunta":"","esVerdadera":true|false,"justificacion":"","claves":["término 1","término 2"]}
 - {"tipo":"alternativas","bloque":"","ref":"","pregunta":"","opciones":["a","b","c","d"],"correcta":0,"explicacion":"por qué esa y por qué no las otras"}
@@ -106,6 +109,9 @@ CÓMO QUIERO LOS ÍTEMS:
 8. ${orientacionOral
     ? 'La prueba es ORAL: cada ítem importante lleva de 2 a 4 repreguntas en "hijos", encadenadas, cada una más honda que la anterior, como el profesor que sigue raspando después de la primera respuesta. Incluye al menos una repregunta que ataque la excepción o el caso límite.'
     : 'Los ítems importantes llevan 1 a 3 repreguntas en "hijos", encadenadas, cada una más honda que la anterior.'}
+8.1 "seccion" va en TODOS los ítems, con el título del tramo del apunte del que salieron, escrito
+   igual que en el texto. Si el apunte no tiene títulos, inventa uno corto y úsalo consistentemente
+   para todos los ítems de ese tramo.
 9. "ref" siempre lleva de dónde sale (artículo, autor, número de clase o página). Si no se puede
    saber del texto, deja "ref" con el tema.
 10. No inventes contenido que no esté en el texto. Si algo está incompleto, omítelo en vez de

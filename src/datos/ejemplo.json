@@ -34,7 +34,8 @@
         "1489",
         "resolución",
         "cumplimiento"
-      ]
+      ],
+      "seccion": "La condición resolutoria"
     },
     {
       "tipo": "lista",
@@ -74,7 +75,8 @@
         "Declaración de nulidad o por la rescisión",
         "Evento de la condición resolutoria",
         "Prescripción"
-      ]
+      ],
+      "seccion": "Modos de extinguir las obligaciones"
     },
     {
       "tipo": "articulo",
@@ -242,7 +244,8 @@
           "respuesta": "De la culpa grave o lata, la menos exigente, porque el contrato no lo beneficia.",
           "ref": "art. 1547 inc. 1 CC"
         }
-      ]
+      ],
+      "seccion": "La graduación de la culpa"
     },
     {
       "tipo": "vf",
@@ -278,7 +281,8 @@
         "La confusión"
       ],
       "correcta": 0,
-      "explicacion": "La tradición es un modo de adquirir el dominio, no de extinguir obligaciones. Los otros tres están en la enumeración del art. 1567."
+      "explicacion": "La tradición es un modo de adquirir el dominio, no de extinguir obligaciones. Los otros tres están en la enumeración del art. 1567.",
+      "seccion": "Modos de extinguir las obligaciones"
     },
     {
       "tipo": "alternativas",

@@ -3,6 +3,7 @@ import { aItems, validarPaquete } from './esquema'
 import { guardarItems } from './repos'
 import ejemplo from './ejemplo.json'
 import { APUNTE_EJEMPLO } from './apunte-ejemplo'
+import { detectarSecciones } from '../logica/mapa'
 
 /**
  * La primera vez que se abre la app se instala un curso de ejemplo, para que
@@ -33,6 +34,8 @@ export async function sembrarSiEstaVacio(): Promise<void> {
     titulo: 'Apunte de ejemplo: condición resolutoria y modos de extinguir',
     texto: APUNTE_EJEMPLO,
     creadoEn: ahora,
+    secciones: detectarSecciones(APUNTE_EJEMPLO),
+    hasta: detectarSecciones(APUNTE_EJEMPLO).length - 1,
     avance: 0,
     terminada: false,
   })

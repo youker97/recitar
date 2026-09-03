@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Item } from '../datos/tipos'
 import { db, nuevoId } from '../datos/db'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useAjustes, useCursoActivo } from '../datos/hooks'
+import { useAjustes, useCursoActivo, useFuentes } from '../datos/hooks'
 import { arrastrarPadre, cargarDatos, registrarRespuesta } from '../datos/repos'
 import { armarCola } from '../logica/cola'
+import { calcularAlcance, filtrarPorAlcance } from '../logica/alcance'
 import { hijosDe } from '../logica/cadena'
 import { useUbicacion, ir } from '../rutas'
 import { formatearDuracion } from '../componentes/Cronometro'
@@ -42,12 +43,21 @@ export function Sesion() {
   const ajustes = useAjustes()
   const curso = useCursoActivo()
   // Sin valor por defecto: así se distingue "todavía cargando" de "no hay nada".
-  const datos = useLiveQuery(() => cargarDatos(curso?.id), [curso?.id])
+  const todos_ = useLiveQuery(() => cargarDatos(curso?.id), [curso?.id])
+  const fuentes = useFuentes(curso?.id)
 
   const soloErrores = params.get('errores') === '1'
   const oral = params.get('oral') === '1'
   const bloqueFiltro = params.get('bloque') ?? undefined
   const soloEstos = (params.get('items') ?? '').split(',').filter(Boolean)
+
+  // Una lista explícita de ítems (por ejemplo la de un volcado) manda sobre el
+  // alcance: si se pidieron esos, son esos.
+  const datos = useMemo(() => {
+    if (!todos_) return undefined
+    if (soloEstos.length > 0) return todos_
+    return filtrarPorAlcance(todos_, calcularAlcance(fuentes)).dentro
+  }, [todos_, fuentes, soloEstos.length])
   const limite = Number(params.get('limite')) || undefined
 
   const [arrancada, setArrancada] = useState(false)

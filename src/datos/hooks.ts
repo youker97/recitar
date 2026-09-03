@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, leerAjustes } from './db'
-import type { Ajustes, Curso, Evaluacion, Fuente, Item, Revision } from './tipos'
+import type { Ajustes, Curso, Evaluacion, Fuente, Item, Revision, Volcado } from './tipos'
 import { AJUSTES_POR_DEFECTO } from './tipos'
 import { cargarDatos } from './repos'
 import type { ItemConProgreso } from '../logica/cola'
@@ -52,6 +52,19 @@ export function useFuentes(cursoId?: string): Fuente[] {
         ? await db.fuentes.where('cursoId').equals(cursoId).toArray()
         : await db.fuentes.toArray()
       return todas.sort((a, b) => b.creadoEn - a.creadoEn)
+    },
+    [cursoId],
+    [],
+  ) ?? []
+}
+
+export function useVolcados(cursoId?: string): Volcado[] {
+  return useLiveQuery(
+    async () => {
+      const todos = cursoId
+        ? await db.volcados.where('cursoId').equals(cursoId).toArray()
+        : await db.volcados.toArray()
+      return todos.sort((a, b) => b.fecha - a.fecha)
     },
     [cursoId],
     [],
