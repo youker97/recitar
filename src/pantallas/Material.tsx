@@ -56,6 +56,10 @@ export function Material() {
         <h1>Material</h1>
         <span className="lado numeral">{cursos.length} {cursos.length === 1 ? 'curso' : 'cursos'}</span>
       </div>
+      <p className="apunte">
+        El inventario de un curso: qué apuntes tiene cargados y qué preguntas salieron de ellos.
+        Para trabajar un tema, el Mapa; para meter archivos nuevos, Importar.
+      </p>
 
       <div className="grilla-dos seccion">
         <label className="campo">

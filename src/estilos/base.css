@@ -53,7 +53,6 @@ a { color: var(--azul); }
   border-bottom: 1px solid var(--linea);
   box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--oro-vivo) 30%, transparent);
   padding-top: env(safe-area-inset-top);
-  overflow: hidden;
 }
 
 /* La franja diagonal de la camiseta, al 3%: se siente, no se ve. */
@@ -70,10 +69,13 @@ a { color: var(--azul); }
   max-width: var(--ancho);
   margin: 0 auto;
   display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.6rem 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.55rem 1rem 0.5rem;
 }
+.cinta-dentro .chapa-curso { margin-left: auto; }
+.cinta-dentro nav { flex-basis: 100%; }
 
 .marca {
   display: inline-flex;
@@ -89,10 +91,7 @@ a { color: var(--azul); }
 
 .marca span { color: var(--oro-vivo); }
 
-@media (max-width: 32rem) {
-  .cinta-dentro { flex-wrap: wrap; row-gap: 0.4rem; }
-  .cinta nav { width: 100%; margin-left: 0 !important; }
-}
+.cinta nav { margin-left: 0; }
 
 .cinta nav {
   margin-left: auto;
@@ -105,14 +104,14 @@ a { color: var(--azul); }
 
 .cinta nav {
   gap: 0.25rem;
-  /* Las secciones no caben en un teléfono: el degradado del borde avisa que
-     hay más a la derecha en vez de dejarlas cortadas de golpe. */
-  -webkit-mask-image: linear-gradient(to right, #000 82%, transparent 100%);
-  mask-image: linear-gradient(to right, #000 82%, transparent 100%);
-  padding-right: 0.75rem;
+  /* Nada de desplazamiento lateral: dos pestañas quedaban fuera de pantalla y
+     nadie las encontraba. Se envuelven en dos filas y se ven todas. */
+  flex-wrap: wrap;
+  overflow: visible;
+  row-gap: 0.2rem;
 }
 @media (max-width: 32rem) {
-  .cinta nav a { padding: 0.28rem 0.5rem; font-size: 0.8rem; }
+  .cinta nav a { padding: 0.26rem 0.5rem; font-size: 0.8rem; }
 }
 
 .cinta nav a {
@@ -712,3 +711,43 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 .adorno-linea { flex: 1; max-width: 4rem; height: 1px; background: var(--linea-fuerte); opacity: 0.6; }
 
 .estrellas { display: inline-flex; gap: 2px; color: var(--oro-vivo); }
+
+/* ---------- el curso activo, siempre a la vista ---------- */
+
+.chapa-curso {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  max-width: 11rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--oro-vivo) 40%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--oro-vivo) 12%, transparent);
+  color: var(--oro);
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.chapa-curso-fija { cursor: default; }
+
+/* El select nativo va encima, invisible: abre el menú del teléfono, que es el
+   que la gente ya sabe usar. */
+.chapa-curso select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 0;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.chapa-curso-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

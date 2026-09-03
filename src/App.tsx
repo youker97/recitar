@@ -17,6 +17,7 @@ import { Mapa } from './pantallas/Mapa'
 import { Vocabulario } from './pantallas/Vocabulario'
 import { Sesion } from './modos/Sesion'
 import { Escudo } from './componentes/Identidad'
+import { SelectorCurso } from './componentes/SelectorCurso'
 
 const NAVEGACION = [
   { ruta: '/', texto: 'Hoy' },
@@ -93,6 +94,7 @@ export default function App() {
               : <Escudo />}
             Recitar<span>.</span>
           </a>
+          {!enSesion && <SelectorCurso />}
           {!enSesion && (
             <nav aria-label="Secciones">
               {NAVEGACION.map((n) => (

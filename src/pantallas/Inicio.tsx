@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { useAjustes, useCursoActivo, useCursos, useDatos, useEvaluaciones, useFuentes, useItems, useRevisiones, useVolcados } from '../datos/hooks'
-import { guardarAjustes } from '../datos/db'
 import { borrarCurso } from '../datos/repos'
 import { contarPendientes } from '../logica/cola'
 import { cargaDeHoy, formatearFecha } from '../logica/plan'
@@ -81,20 +80,6 @@ export function Inicio() {
 
   return (
     <div>
-      {cursos.length > 1 && (
-        <label className="campo" style={{ marginTop: '1rem' }}>
-          <span>Curso</span>
-          <select
-            value={curso?.id ?? ''}
-            onChange={(e) => guardarAjustes({ cursoActivoId: e.target.value })}
-          >
-            {cursos.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
-        </label>
-      )}
-
       {items.length > 0 && items.every((i) => i.origen === 'ejemplo') && (
         <div className="hoja hoja-aviso">
           <strong>Esto es un curso de ejemplo.</strong>
