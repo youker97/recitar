@@ -215,3 +215,138 @@ function seDejaEnMayusculas(palabra: string): boolean {
   if (/^[IVXLCDM]+$/.test(limpia)) return true
   return !/[AEIOUÁÉÍÓÚ]/.test(limpia)
 }
+
+// ---------------------------------------------------------------------------
+// El mapa que arma Claude.
+//
+// Claude devuelve los temas con las primeras palabras de cada uno; la app solo
+// las ubica en el texto. Así el corte lo decide quien leyó el apunte, y la
+// app se limita a lo que sabe hacer: buscar una posición exacta.
+// ---------------------------------------------------------------------------
+
+export interface TemaDeClaude {
+  titulo: string
+  empieza: string
+}
+
+export interface MapaTraido {
+  secciones: SeccionApunte[]
+  /** Los que Claude nombró pero no se pudieron ubicar en el texto. */
+  perdidos: string[]
+}
+
+/**
+ * Texto normalizado más el índice de dónde salió cada carácter, para poder
+ * buscar sin tildes ni dobles espacios y volver a la posición original.
+ */
+function aplanar(texto: string): { plano: string; indices: number[] } {
+  let plano = ''
+  const indices: number[] = []
+  let enBlanco = false
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i]
+    if (/\s/.test(c)) {
+      if (enBlanco || plano.length === 0) continue
+      plano += ' '
+      indices.push(i)
+      enBlanco = true
+      continue
+    }
+    enBlanco = false
+    const limpio = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    for (const l of limpio) {
+      plano += l
+      indices.push(i)
+    }
+  }
+  return { plano, indices }
+}
+
+function aguja(frase: string): string {
+  return aplanar(frase).plano.trim()
+}
+
+/**
+ * Busca dónde empieza un tema. Si no encuentra las diez palabras completas
+ * prueba con menos: Claude a veces corrige una tilde al copiar.
+ */
+function ubicar(plano: string, indices: number[], empieza: string, desde: number): number {
+  const palabras = aguja(empieza).split(' ').filter(Boolean)
+  for (let cuantas = palabras.length; cuantas >= 3; cuantas--) {
+    const trozo = palabras.slice(0, cuantas).join(' ')
+    if (trozo.length < 8) break
+    const pos = plano.indexOf(trozo, desde)
+    if (pos !== -1) return indices[pos]
+    // Puede venir desordenado: se busca también desde el principio.
+    const otra = plano.indexOf(trozo)
+    if (otra !== -1) return indices[otra]
+  }
+  return -1
+}
+
+export function mapaDesdeClaude(texto: string, temas: TemaDeClaude[]): MapaTraido {
+  const { plano, indices } = aplanar(texto)
+  const encontrados: { titulo: string; inicio: number }[] = []
+  const perdidos: string[] = []
+  let cursor = 0
+
+  for (const tema of temas) {
+    const titulo = tema.titulo?.trim()
+    if (!titulo) continue
+    const inicio = ubicar(plano, indices, tema.empieza ?? '', cursor)
+    if (inicio === -1) {
+      perdidos.push(titulo)
+      continue
+    }
+    encontrados.push({ titulo, inicio })
+    const pos = plano.indexOf(aguja(tema.empieza ?? ''), cursor)
+    cursor = pos === -1 ? cursor : pos + 1
+  }
+
+  if (encontrados.length === 0) return { secciones: [], perdidos }
+
+  encontrados.sort((a, b) => a.inicio - b.inicio)
+  // Ojo: acá NO se lleva el primero a 0. Con un apunte largo esto se llama una
+  // vez por parte, y si cada parte empezara en 0 la parte 2 pisaría a la 1.
+  // De eso se encarga fusionarSecciones, que es quien ve el mapa completo.
+  const secciones: SeccionApunte[] = encontrados.map((t, i) => ({
+    titulo: t.titulo,
+    inicio: t.inicio,
+    fin: i + 1 < encontrados.length ? encontrados[i + 1].inicio : texto.length,
+    cubierta: false,
+  }))
+
+  return { secciones: secciones.filter((s) => s.fin > s.inicio), perdidos }
+}
+
+/**
+ * Junta el mapa que ya había con el de una parte nueva.
+ *
+ * Un apunte largo no cabe en un solo pedido y va por partes. Si cada parte
+ * reemplazara el mapa entero, terminar la parte 3 borraría los temas de la 1.
+ * Acá se acumulan: se ordenan por dónde aparecen y se recalculan los cortes.
+ */
+export function fusionarSecciones(
+  texto: string,
+  previas: SeccionApunte[],
+  nuevas: SeccionApunte[],
+): SeccionApunte[] {
+  const todas = [...previas, ...nuevas].sort((a, b) => a.inicio - b.inicio)
+  const juntas: SeccionApunte[] = []
+  for (const s of todas) {
+    const ultima = juntas[juntas.length - 1]
+    // Dos cortes casi en el mismo punto son el mismo tema visto dos veces: se
+    // queda el más nuevo, que es el que acaba de traer Claude.
+    if (ultima && Math.abs(s.inicio - ultima.inicio) < 200) {
+      juntas[juntas.length - 1] = { ...s, cubierta: ultima.cubierta || s.cubierta }
+      continue
+    }
+    juntas.push({ ...s })
+  }
+  if (juntas.length === 0) return []
+  juntas[0].inicio = 0
+  return juntas.map((s, i) => ({
+    ...s,
+    fin: i + 1 < juntas.length ? juntas[i + 1].inicio : texto.length,
+  }))
+}
