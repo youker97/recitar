@@ -46,12 +46,33 @@ export default function App() {
   // que repetir la paleta oscura en dos selectores.
   useEffect(() => {
     const raiz = document.documentElement
+
+    /**
+     * La barra de estado del teléfono se pinta con <meta theme-color>, y estaba
+     * clavada en el color claro: con el tema oscuro quedaba una franja crema
+     * arriba de una app negra. Se deja en el mismo color que la cinta.
+     *
+     * Se borran las que trae el HTML porque llevan media query y el navegador
+     * usa la PRIMERA que calce: agregar otra al final no ganaría.
+     */
+    const pintarLaBarra = () => {
+      for (const vieja of document.querySelectorAll('meta[name="theme-color"]')) vieja.remove()
+      const meta = document.createElement('meta')
+      meta.name = 'theme-color'
+      meta.content = getComputedStyle(raiz).getPropertyValue('--papel-hondo').trim()
+      document.head.appendChild(meta)
+    }
+
     if (ajustes.tema !== 'auto') {
       raiz.dataset.tema = ajustes.tema === 'oscuro' ? 'oscuro' : 'claro'
+      pintarLaBarra()
       return
     }
     const consulta = window.matchMedia('(prefers-color-scheme: dark)')
-    const aplicar = () => { raiz.dataset.tema = consulta.matches ? 'oscuro' : 'claro' }
+    const aplicar = () => {
+      raiz.dataset.tema = consulta.matches ? 'oscuro' : 'claro'
+      pintarLaBarra()
+    }
     aplicar()
     consulta.addEventListener('change', aplicar)
     return () => consulta.removeEventListener('change', aplicar)
