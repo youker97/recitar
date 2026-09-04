@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useUbicacion } from './rutas'
-import { useAjustes } from './datos/hooks'
+import { useAjustes, useCursoActivo } from './datos/hooks'
 import { borrarElEjemplo } from './datos/limpieza'
 import { Inicio } from './pantallas/Inicio'
 import { Errores } from './pantallas/Errores'
@@ -18,28 +18,21 @@ import { Vocabulario } from './pantallas/Vocabulario'
 import { Revisar } from './pantallas/Revisar'
 import { Sesion } from './modos/Sesion'
 import { Escudo } from './componentes/Identidad'
-import { SelectorCurso } from './componentes/SelectorCurso'
+import { Menu } from './componentes/Menu'
 
-/**
- * Cuatro pestañas, no siete.
- *
- * Las apps de estudio que funcionan tienen una pantalla principal y todo lo
- * demás detrás: Anki abre en la lista de mazos, LegalQuiz en la biblioteca de
- * fichas y las materias se administran desde Ajustes. Acá había siete
- * pestañas del mismo peso —dos de ellas fuera de pantalla— y tres con nombres
- * parecidos: Mapa, Material e Importar.
- */
-const NAVEGACION = [
-  { ruta: '/', texto: 'Estudiar' },
-  { ruta: '/mapa', texto: 'Mis apuntes' },
-  { ruta: '/estadisticas', texto: 'Cómo voy' },
-  { ruta: '/ajustes', texto: 'Ajustes' },
-]
+/** Cuánto hay que arrastrar el dedo para que cuente como deslizar. */
+const ARRASTRE = 45
+/** Ancho del borde izquierdo desde donde se abre el menú. */
+const BORDE = 24
 
 export default function App() {
   const { ruta } = useUbicacion()
   const ajustes = useAjustes()
+  const curso = useCursoActivo()
   const [listo, setListo] = useState(false)
+  const [menu, setMenu] = useState(false)
+
+  const cerrarMenu = useCallback(() => setMenu(false), [])
 
   useEffect(() => {
     borrarElEjemplo().finally(() => setListo(true))
@@ -63,6 +56,57 @@ export default function App() {
     consulta.addEventListener('change', aplicar)
     return () => consulta.removeEventListener('change', aplicar)
   }, [ajustes.tema])
+
+  /**
+   * Deslizar desde el borde izquierdo abre el menú; deslizar hacia la
+   * izquierda con el menú abierto lo cierra. Si el dedo va más vertical que
+   * horizontal se deja pasar: eso es desplazar la página, no abrir nada.
+   */
+  useEffect(() => {
+    let x0 = 0
+    let y0 = 0
+    let desdeElBorde = false
+    let siguiendo = false
+
+    const empezar = (e: TouchEvent) => {
+      const t = e.touches[0]
+      if (!t) return
+      x0 = t.clientX
+      y0 = t.clientY
+      desdeElBorde = t.clientX <= BORDE
+      siguiendo = true
+    }
+    const mover = (e: TouchEvent) => {
+      if (!siguiendo) return
+      const t = e.touches[0]
+      if (!t) return
+      const dx = t.clientX - x0
+      const dy = t.clientY - y0
+      if (Math.abs(dy) > Math.abs(dx)) {
+        siguiendo = false
+        return
+      }
+      if (!menu && desdeElBorde && dx > ARRASTRE) {
+        setMenu(true)
+        siguiendo = false
+      } else if (menu && dx < -ARRASTRE) {
+        setMenu(false)
+        siguiendo = false
+      }
+    }
+    const terminar = () => { siguiendo = false }
+
+    window.addEventListener('touchstart', empezar, { passive: true })
+    window.addEventListener('touchmove', mover, { passive: true })
+    window.addEventListener('touchend', terminar, { passive: true })
+    window.addEventListener('touchcancel', terminar, { passive: true })
+    return () => {
+      window.removeEventListener('touchstart', empezar)
+      window.removeEventListener('touchmove', mover)
+      window.removeEventListener('touchend', terminar)
+      window.removeEventListener('touchcancel', terminar)
+    }
+  }, [menu])
 
   let pantalla
   switch (ruta) {
@@ -96,33 +140,35 @@ export default function App() {
     <>
       <header className="cinta">
         <div className="cinta-dentro">
+          <button
+            className="boton-menu"
+            onClick={() => setMenu(true)}
+            aria-label="Abrir el menú"
+            aria-expanded={menu}
+          >
+            <span aria-hidden="true">☰</span> Menú
+          </button>
           <a className="marca" href="#/">
             {ajustes.escudo
               ? <img className="emblema" src={ajustes.escudo} alt="" />
               : <Escudo />}
             Recitar<span>.</span>
           </a>
-          {!enSesion && <SelectorCurso />}
-          {!enSesion && (
-            <nav aria-label="Secciones">
-              {NAVEGACION.map((n) => (
-                <a
-                  key={n.ruta}
-                  href={`#${n.ruta}`}
-                  aria-current={ruta === n.ruta ? 'page' : undefined}
-                >
-                  {n.texto}
-                </a>
-              ))}
-            </nav>
-          )}
-          {enSesion && (
-            <nav aria-label="Salir">
-              <a href="#/">Salir de la sesión</a>
-            </nav>
+          {enSesion ? (
+            <a className="cinta-salir" href="#/">Salir</a>
+          ) : (
+            curso && (
+              // La chapa del ramo abre el menú, que es donde están todos los
+              // ramos: un solo lugar para cambiarlo, no dos.
+              <button className="chapa-curso" onClick={() => setMenu(true)} title="Cambiar de ramo">
+                <span className="chapa-curso-nombre">{curso.nombre}</span>
+                <span aria-hidden="true">▾</span>
+              </button>
+            )
           )}
         </div>
       </header>
+      <Menu abierto={menu} cerrar={cerrarMenu} ruta={ruta} />
       <main className="marco">{listo ? pantalla : <p className="apunte">Abriendo…</p>}</main>
     </>
   )

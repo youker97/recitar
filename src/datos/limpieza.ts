@@ -73,9 +73,22 @@ async function borrarCursoEntero(cursoId: string): Promise<void> {
   )
 }
 
-/** Un curso sin apuntes ni preguntas no es nada: estorba en el selector. */
+/** Un día. Menos que eso, el ramo lo acabas de crear. */
+const RECIEN = 24 * 60 * 60 * 1000
+
+/**
+ * Un curso viejo sin apuntes ni preguntas es un fantasma y estorba.
+ *
+ * Pero NO se toca uno recién creado ni el que tienes puesto: creas "Procesal
+ * III" en Ajustes para meterle el apunte mañana, cierras la app, y al volver
+ * ya no está. Eso es peor que el fantasma.
+ */
 async function borrarCursosVacios(): Promise<void> {
+  const ajustes = await leerAjustes()
+  const ahora = Date.now()
   for (const curso of await db.cursos.toArray()) {
+    if (curso.id === ajustes.cursoActivoId) continue
+    if (ahora - curso.creadoEn < RECIEN) continue
     const conItems = await db.items.where('cursoId').equals(curso.id).count()
     const conApuntes = await db.fuentes.where('cursoId').equals(curso.id).count()
     const conPruebas = await db.evaluaciones.where('cursoId').equals(curso.id).count()

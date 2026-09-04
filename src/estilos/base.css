@@ -70,12 +70,16 @@ a { color: var(--azul); }
   margin: 0 auto;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  /* Una sola fila siempre: con un ramo de nombre largo la chapa se iba a una
+     segunda fila y la cinta crecía. Lo que se achica es la chapa, con puntos
+     suspensivos; el botón del menú no se toca nunca. */
+  flex-wrap: nowrap;
   gap: 0.5rem 0.75rem;
   padding: 0.55rem 1rem 0.5rem;
 }
-.cinta-dentro .chapa-curso { margin-left: auto; }
-.cinta-dentro nav { flex-basis: 100%; }
+.cinta-dentro .boton-menu,
+.cinta-dentro .marca { flex: none; }
+.cinta-dentro .chapa-curso { margin-left: auto; flex: 0 1 auto; min-width: 4rem; }
 
 .marca {
   display: inline-flex;
@@ -91,46 +95,36 @@ a { color: var(--azul); }
 
 .marca span { color: var(--oro-vivo); }
 
-.cinta nav { margin-left: 0; }
+/* El botón que abre el menú. Lleva la palabra "Menú" al lado del icono a
+   propósito: tres rayitas solas hay que aprendérselas, y esta app se abre
+   cada tanto, no todos los días. */
+.boton-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 0;
+  padding: 0.28rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--tinta-suave);
+  background: var(--papel-alto);
+  border: 1px solid var(--linea-fuerte);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.boton-menu span { font-size: 1rem; line-height: 1; }
+.boton-menu:hover { color: var(--tinta); border-color: var(--oro-vivo); }
 
-.cinta nav {
+.cinta-salir {
   margin-left: auto;
-  display: flex;
-  gap: 0.9rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.cinta nav::-webkit-scrollbar { display: none; }
-
-.cinta nav {
-  gap: 0.25rem;
-  /* Nada de desplazamiento lateral: dos pestañas quedaban fuera de pantalla y
-     nadie las encontraba. Se envuelven en dos filas y se ven todas. */
-  flex-wrap: wrap;
-  overflow: visible;
-  row-gap: 0.2rem;
-}
-@media (max-width: 32rem) {
-  .cinta nav a { padding: 0.26rem 0.5rem; font-size: 0.8rem; }
-}
-
-.cinta nav a {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: var(--tinta-tenue);
   text-decoration: none;
-  white-space: nowrap;
-  padding: 0.3rem 0.62rem;
+  padding: 0.28rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid transparent;
-  transition: color 120ms linear, background 120ms linear;
+  border: 1px solid var(--linea);
 }
-.cinta nav a:hover { color: var(--tinta); }
-.cinta nav a[aria-current='page'] {
-  color: var(--oro);
-  background: color-mix(in srgb, var(--oro-vivo) 14%, transparent);
-  border-color: color-mix(in srgb, var(--oro-vivo) 32%, transparent);
-  font-weight: 600;
-}
+.cinta-salir:hover { color: var(--tinta); }
 
 .seccion { margin: 1.5rem 0; }
 
@@ -794,21 +788,8 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   text-overflow: ellipsis;
   cursor: pointer;
 }
-.chapa-curso-fija { cursor: default; }
-
-/* El select nativo va encima, invisible: abre el menú del teléfono, que es el
-   que la gente ya sabe usar. */
-.chapa-curso select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  min-height: 0;
-  opacity: 0;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-}
 .chapa-curso-nombre {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -877,3 +858,160 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   color: var(--oro);
 }
 .pasos strong { color: var(--tinta); }
+
+/* ---------- el menú lateral ---------- */
+
+/* Entra desde el borde izquierdo, como el de la app de Claude: adentro está
+   todo lo que la app hace, por zonas, y el ramo es el botón de cada zona. */
+
+.menu-velo {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(10, 10, 12, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 180ms ease, visibility 0s linear 180ms;
+}
+.menu-velo-visible {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 180ms ease, visibility 0s;
+}
+
+.menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 31;
+  width: min(20rem, 84vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--papel-alto);
+  border-right: 1px solid var(--linea);
+  box-shadow: var(--sombra-2);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 200ms cubic-bezier(0.2, 0, 0, 1), visibility 0s linear 200ms;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.menu-abierto {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform 220ms cubic-bezier(0.2, 0, 0, 1), visibility 0s;
+}
+.menu:focus { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .menu, .menu-velo { transition-duration: 0s; }
+}
+
+.menu-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.8rem 0.9rem 0.6rem;
+  border-bottom: 1px solid var(--linea);
+}
+
+.menu-cerrar {
+  min-height: 0;
+  padding: 0.2rem 0.5rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--tinta-tenue);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.menu-cerrar:hover { color: var(--tinta); border-color: var(--linea-fuerte); }
+
+.menu-cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.5rem 0.6rem 1.5rem;
+}
+
+.menu-rotulo {
+  margin: 0.9rem 0 0.25rem;
+  padding: 0 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+}
+.menu-rotulo:first-child { margin-top: 0.3rem; }
+
+.menu-nota {
+  margin: 0.4rem 0.5rem 0.8rem;
+  font-size: 0.86rem;
+  color: var(--tinta-suave);
+}
+
+.menu-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.5rem 0.6rem;
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.94rem;
+  color: var(--tinta);
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--curva-chica);
+  cursor: pointer;
+}
+.menu-fila .crece { flex: 1; min-width: 0; text-align: left; }
+.menu-fila:hover { background: var(--papel-realce); }
+
+.menu-fila-activa {
+  color: var(--oro);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--oro-vivo) 12%, transparent);
+  border-color: color-mix(in srgb, var(--oro-vivo) 30%, transparent);
+}
+
+.menu-fila-fuerte {
+  justify-content: center;
+  color: var(--sobre-oro);
+  font-weight: 600;
+  background: var(--oro-vivo);
+  border-color: var(--oro-vivo);
+}
+.menu-fila-fuerte .crece { flex: 1; text-align: center; }
+.menu-fila-fuerte:hover { background: var(--oro-vivo); filter: brightness(1.05); }
+
+.menu-cuenta {
+  flex: none;
+  min-width: 1.6rem;
+  padding: 0.08rem 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--sobre-oro);
+  background: var(--oro-vivo);
+  border-radius: 999px;
+}
+.menu-cuenta-cero {
+  color: var(--tinta-tenue);
+  background: var(--papel-realce);
+  font-weight: 600;
+}
+
+.menu-filete {
+  height: 1px;
+  margin: 0.9rem 0.6rem;
+  border: 0;
+  background: var(--linea);
+}
