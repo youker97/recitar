@@ -22,10 +22,9 @@ export function Mapa() {
   const items = useItems(curso?.id)
   const [abierto, setAbierto] = useState<string | null>(null)
   const [pidiendo, setPidiendo] = useState<{ fuente: Fuente; indice: number } | null>(null)
-  // Se guarda el id, no el apunte: el panel lo va guardando a medida que
-  // trabaja, y con una copia vieja la segunda parte no vería a la primera.
+  // El panel se dibuja dentro del apunte al que pertenece, así que basta el
+  // id: la fuente viva sale del map, sin copias viejas.
   const [armandoId, setArmandoId] = useState<string | null>(null)
-  const armando = fuentes.find((f) => f.id === armandoId) ?? null
 
   // Las palabras del vocabulario se cuentan aparte: no son preguntas del tema,
   // son el paso previo a poder leerlo.
@@ -150,6 +149,10 @@ export function Mapa() {
                 </button>
               </div>
 
+              {armandoId === fuente.id && (
+                <ArmarMapa fuente={fuente} nombreCurso={curso.nombre} onCerrar={() => setArmandoId(null)} />
+              )}
+
               {desplegado && (
                 <ul className="lista-limpia">
                   {secciones.map((s, i) => {
@@ -199,6 +202,15 @@ export function Mapa() {
                             {i === tope ? 'Hasta acá ✓' : 'Hasta acá'}
                           </button>
                         </div>
+                        {pidiendo?.fuente.id === fuente.id && pidiendo.indice === i && (
+                          <PedirPreguntas
+                            fuente={fuente}
+                            seccion={s}
+                            nombreCurso={curso.nombre}
+                            bloques={[...new Set(items.map((x) => x.bloque).filter(Boolean))]}
+                            onCerrar={() => setPidiendo(null)}
+                          />
+                        )}
                       </li>
                     )
                   })}
@@ -209,19 +221,6 @@ export function Mapa() {
         })
       )}
 
-      {armando && (
-        <ArmarMapa fuente={armando} nombreCurso={curso.nombre} onCerrar={() => setArmandoId(null)} />
-      )}
-
-      {pidiendo && (
-        <PedirPreguntas
-          fuente={pidiendo.fuente}
-          seccion={mapaDe(pidiendo.fuente)[pidiendo.indice]}
-          nombreCurso={curso.nombre}
-          bloques={[...new Set(items.map((i) => i.bloque).filter(Boolean))]}
-          onCerrar={() => setPidiendo(null)}
-        />
-      )}
     </div>
   )
 }
