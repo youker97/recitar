@@ -654,73 +654,107 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 
 /* ---------- lectura de un apunte ---------- */
 
-.lectura { margin: 0.75rem 0 1rem; }
-/* Sin partir palabras: en un teléfono angosto dejaba "alema-na" y
-   "descrip-ciones" en media línea, y eso cansa más que ahorrar espacio. */
-.lectura p { margin: 0 0 0.95rem; hyphens: manual; }
-/* Justificar en un teléfono abre huecos enormes entre palabras. */
-@media (min-width: 40rem) { .lectura > p.estudio { text-align: justify; } }
-.lectura > *:first-child { margin-top: 0; }
+/* --- leer un apunte: una página, no una pantalla --- */
 
-/* --- títulos que ya venían en el apunte --- */
+/* Esto no se ve como el resto de la app a propósito. Un apunte se lee como el
+   documento que es: hoja, serif de punta a punta, texto justificado y ningún
+   color adentro. Los filetes dorados y las tarjetas quedan para la app; acá
+   estorban, porque lo que se está haciendo es leer seis minutos seguidos.
+
+   La medida manda sobre el tamaño: a 1.2rem entraban cinco palabras por línea
+   y el ojo salta más de lo que lee. A 1.02rem entran unas cuarenta y cinco
+   letras, que es la medida corta de un libro. Quien necesite más grande lo
+   sube en Ajustes y la hoja lo respeta. */
+
+.lectura {
+  margin: 0.75rem 0 1rem;
+  padding: 1.35rem 1.15rem 1.1rem;
+  background: var(--papel-alto);
+  border: 1px solid var(--linea);
+  border-radius: var(--curva);
+  box-shadow: var(--sombra-1);
+}
+.lectura > *:first-child { margin-top: 0; }
+.lectura > *:last-child { margin-bottom: 0; }
+
+.lectura .estudio {
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  line-height: 1.72;
+}
+html[data-texto='grande'] .lectura .estudio { font-size: 1.1rem; }
+
+/* Justificado y sin partir palabras, como el apunte impreso. Cortar en
+   "alema-na" cansa más de lo que ahorra. */
+.lectura p.estudio {
+  margin: 0 0 0.9rem;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: manual;
+}
+
+/* --- los títulos que ya venían en el apunte --- */
 
 .lectura-titulo {
-  font-family: var(--sans);
-  font-weight: 700;
-  line-height: 1.25;
+  font-family: var(--serif);
   color: var(--tinta);
-  margin: 1.6rem 0 0.7rem;
+  line-height: 1.3;
 }
+/* El de arriba, centrado y espaciado: es la portada del tema. */
 .lectura-titulo-1 {
-  font-size: 1.1rem;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  padding-bottom: 0.4rem;
-  border-bottom: 2px solid var(--oro-vivo);
+  margin: 1.8rem 0 1.1rem;
+  font-size: 1.06rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-align: center;
 }
 .lectura-titulo-2 {
-  font-size: 1.02rem;
-  padding-left: 0.7rem;
-  border-left: 3px solid var(--oro-vivo);
+  margin: 1.5rem 0 0.6rem;
+  font-size: 1.04rem;
+  font-weight: 700;
 }
 .lectura-titulo-3 {
-  font-size: 0.96rem;
+  margin: 1.1rem 0 0.45rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-style: italic;
   color: var(--tinta-suave);
-  letter-spacing: 0.02em;
 }
 
-/* --- la cita literal de un artículo, como en un apunte bien hecho --- */
+/* --- la cita literal de un artículo --- */
 
+/* En un documento una cita larga no va en un recuadro: va sangrada y un punto
+   más chica. Eso ya la separa del cuerpo sin meter una tarjeta en medio de la
+   lectura. */
 .cita-legal {
-  margin: 1.1rem 0;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--linea);
-  border-left: 3px solid var(--oro-vivo);
-  border-radius: var(--curva);
-  background: color-mix(in srgb, var(--oro-vivo) 6%, var(--papel-alto));
+  margin: 1rem 0 1.1rem;
+  padding: 0 0 0 1rem;
+  border-left: 2px solid var(--linea-fuerte);
+  background: none;
+  border-radius: 0;
 }
 .cita-fuente {
   display: block;
-  font-family: var(--sans);
-  font-size: 0.68rem;
+  font-family: var(--serif);
+  font-size: 0.86rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--oro);
-  margin-bottom: 0.4rem;
+  letter-spacing: 0.04em;
+  color: var(--tinta-suave);
+  margin-bottom: 0.25rem;
 }
-.cita-legal .estudio {
+.lectura .cita-legal .estudio {
   display: block;
-  font-style: italic;
-  font-size: 1.1rem;
-  line-height: 1.6;
+  font-size: 0.96rem;
+  line-height: 1.68;
+  text-align: justify;
+  font-style: normal;
 }
 
 /* --- enumeraciones --- */
 
-.lectura-lista { margin: 0 0 1rem; padding-left: 1.4rem; }
-.lectura-lista li { margin-bottom: 0.4rem; }
-.lectura-lista li::marker { color: var(--oro); font-family: var(--sans); font-size: 0.85em; }
+.lectura-lista { margin: 0 0 1rem; padding-left: 1.5rem; }
+.lectura-lista li { margin-bottom: 0.35rem; }
+.lectura-lista li::marker { color: var(--tinta-suave); font-family: var(--serif); }
 
 /* ---------- identidad: el escudo y los adornos ---------- */
 
@@ -1015,6 +1049,8 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   border-top: 1px solid var(--linea);
 }
 
+/* Círculo de contorno, como los botones redondos de la app: el fondo se ve
+   a través y el aro es lo único que lo dibuja. */
 .menu-avatar {
   flex: none;
   display: inline-flex;
@@ -1025,12 +1061,13 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   min-height: 0;
   padding: 0;
   color: var(--tinta);
-  background: var(--papel-realce);
-  border: 1px solid var(--linea);
+  background: none;
+  border: 1px solid var(--linea-fuerte);
   border-radius: 999px;
   cursor: pointer;
   overflow: hidden;
 }
+.menu-avatar:hover { background: var(--papel-realce); }
 .menu-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .menu-avatar-activo { border-color: var(--oro-vivo); }
 
@@ -1047,16 +1084,19 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   font-size: 0.95rem;
   font-weight: 600;
   white-space: nowrap;
-  color: var(--sobre-oro);
-  background: var(--oro-vivo);
+  /* Pastilla de contraste, como la de la app: blanca sobre el oscuro y negra
+     sobre el claro. El dorado queda para el número, que es lo que informa. */
+  color: var(--papel);
+  background: var(--tinta);
   border: 0;
   border-radius: 999px;
   cursor: pointer;
 }
-.menu-principal .icono { color: var(--sobre-oro); width: 1.15rem; height: 1.15rem; }
+.menu-principal .icono { color: var(--papel); width: 1.15rem; height: 1.15rem; }
 .menu-principal .numeral {
-  padding: 0.05rem 0.4rem;
+  padding: 0.05rem 0.45rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--sobre-oro) 16%, transparent);
+  color: var(--sobre-oro);
+  background: var(--oro-vivo);
 }
-.menu-principal:hover { filter: brightness(1.05); }
+.menu-principal:hover { filter: brightness(1.12); }
