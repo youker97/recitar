@@ -406,3 +406,117 @@ Devuelve SOLO este JSON, dentro de un bloque de código:
   ]
 }`
 }
+
+// ---------------------------------------------------------------------------
+// El pedido maestro: todo el apunte, en entregas.
+//
+// Pedir el mapa por un lado, el vocabulario tema por tema y las preguntas tema
+// por tema significaba veintiuna copiadas para un apunte mediano. Acá se copia
+// UN pedido, se adjunta el apunte en Claude, y cada respuesta trae temas
+// completos —con su vocabulario y sus preguntas— que la app reparte sola.
+//
+// El límite que no se puede saltar es el largo de una respuesta: un apunte de
+// trescientas páginas no cabe en un mensaje. Por eso van entregas; lo que sí
+// se evita es volver a copiar el pedido cada vez.
+// ---------------------------------------------------------------------------
+
+export function armarPedidoMaestro(o: {
+  curso: string
+  titulo: string
+  /** Va solo si el apunte es chico: si no, se adjunta el archivo en Claude. */
+  texto?: string
+}): string {
+  const material = o.texto
+    ? `EL APUNTE\n-----\n${o.texto}\n-----`
+    : `EL APUNTE\nTe lo adjunto en este mismo mensaje (${o.titulo}). Léelo entero antes de\nempezar: necesito que el corte en temas salga de haberlo entendido, no de\nmirar los títulos.`
+
+  return `Estudio Derecho en Chile y uso una app para estudiar que se llama Recitar.
+Necesito que me prepares un apunte de ${o.curso} para meterlo ahí. Yo copio lo
+que me des y lo pego en la app; ella se encarga de ordenarlo.
+
+${material}
+
+CÓMO QUIERO QUE ME LO ENTREGUES
+Por partes. Cada vez que te diga "sigue", me das la siguiente entrega. No
+intentes darme todo de una: prefiero seis entregas completas que una cortada
+a la mitad.
+
+Cada entrega trae DOS O TRES TEMAS, y de cada tema TODO lo suyo:
+
+1. EL TEMA
+   Una unidad con sentido propio: la institución o la materia que el profesor
+   trataría de corrido. Ni el apunte entero ni cada subtítulo suelto. La
+   prueba: si estudiara ese tema en una sentada de 20 minutos, ¿quedaría con
+   una idea completa o con la mitad de una?
+   - El título dilo TÚ, en cristiano: "II.- TEORIA DE LA ANTIJURIDICIDAD" es
+     "La antijuridicidad".
+   - En "empieza" copia EXACTAMENTE las primeras diez palabras del tema, tal
+     como están en el apunte. Con eso lo ubico; si las parafraseas se pierde.
+
+2. SU VOCABULARIO — de 8 a 15 términos por tema
+   Los que hay que tener claros para poder leerlo: instituciones, doctrinas,
+   latinismos, y los pares que el apunte contrapone.
+   NO cuentan los pedazos de oración ("como sucede", "esta teoría", "en
+   cambio"): si no se puede decir "X es...", no es un término.
+   Cada uno con su definición en el sentido de ESTE ramo, dos o tres líneas,
+   escrita como la daría yo en una prueba y no como un diccionario.
+
+3. SUS PREGUNTAS — de 6 a 12 por tema
+   Con qué me vas a evaluar. Mézclalas: verdadero/falso con justificación,
+   listas que hay que enumerar, artículos, desarrollo. Si el tema da para
+   repreguntas encadenadas (las del oral), ponlas.
+
+REGLAS QUE VALEN PARA TODO
+- Derecho chileno. Nada de definiciones de diccionario ni de otro país.
+- No inventes artículos ni números. Si no estás seguro, no lo pongas.
+- "seccion" de cada pregunta y de cada término es el TÍTULO DEL TEMA tal como
+  lo escribiste arriba. Así la app sabe a qué tema pertenece cada cosa.
+- Devuelve SOLO el JSON, dentro de un bloque de código. Sin explicaciones
+  antes ni después: lo pego tal cual.
+
+FORMATO DE CADA ENTREGA
+
+{
+  "recitar": 1,
+  "entrega": 1,
+  "de": 6,
+  "temas": [
+    { "titulo": "La antijuridicidad",
+      "empieza": "II.- TEORIA DE LA ANTIJURIDICIDAD La antijuridicidad es la" }
+  ],
+  "items": [
+    { "tipo": "concepto", "seccion": "La antijuridicidad",
+      "termino": "posición de garante",
+      "definicion": "Deber jurídico específico de evitar un resultado...",
+      "contexto": "la frase del apunte donde aparece, copiada tal cual",
+      "fuente": "apunte",
+      "ref": "de dónde sale" },
+
+    { "tipo": "vf", "seccion": "La antijuridicidad", "ref": "art. 10 N°4 CP",
+      "pregunta": "La legítima defensa excluye la tipicidad.",
+      "esVerdadera": false,
+      "justificacion": "Excluye la antijuridicidad: la conducta sigue siendo típica.",
+      "claves": ["antijuridicidad", "típica"],
+      "hijos": [
+        { "tipo": "repregunta", "pregunta": "¿Y qué pasa con el error?",
+          "respuesta": "..." }
+      ] },
+
+    { "tipo": "lista", "seccion": "La antijuridicidad", "ref": "art. 10 N°4 CP",
+      "titulo": "Requisitos de la legítima defensa",
+      "elementos": ["Agresión ilegítima", "Necesidad racional del medio", "Falta de provocación"] },
+
+    { "tipo": "articulo", "seccion": "La antijuridicidad", "ref": "CP",
+      "numero": "10", "materia": "Eximentes de responsabilidad penal" },
+
+    { "tipo": "desarrollo", "seccion": "La antijuridicidad", "ref": "clase",
+      "enunciado": "Explique las causales de justificación.",
+      "checklist": [
+        { "texto": "Distingue justificación de exculpación", "claves": ["exculpación"] }
+      ] }
+  ]
+}
+
+En "de" pon cuántas entregas calculas que necesitas para el apunte completo,
+para saber cuánto falta. Empieza con la entrega 1.`
+}
