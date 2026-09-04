@@ -138,6 +138,12 @@ export interface Item {
   orden?: number
   etiquetas?: string[]
   suspendido?: boolean
+  /**
+   * Reparos de la revisión contra el apunte: cosas que Claude trajo y no están
+   * en tu texto. No significa que estén mal, significa "míralo antes de
+   * estudiarlo". Se vacía cuando lo das por bueno.
+   */
+  revisar?: string[]
   origen: OrigenItem
   creadoEn: number
   actualizadoEn: number

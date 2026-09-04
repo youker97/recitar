@@ -33,6 +33,13 @@ export function Inicio() {
     [revisiones, ajustes.metaDiaria],
   )
   const mazos = useMemo(() => mazosPorBloque(datos), [datos])
+  // Sobre TODOS los datos, no solo los que entran a las sesiones: revisar no
+  // es estudiar, y si el alcance los escondiera el número no calzaría con el
+  // que dio la entrega.
+  const porRevisar = useMemo(
+    () => todosLosDatos.filter((d) => (d.item.revisar?.length ?? 0) > 0).length,
+    [todosLosDatos],
+  )
 
   const errores = useMemo(
     () =>
@@ -105,6 +112,19 @@ export function Inicio() {
           {fuera > 0 && `${fuera} son de materia que el curso todavía no pasa. `}
           <a href="#/mapa">Ver el mapa</a>
         </p>
+      )}
+
+      {porRevisar > 0 && (
+        <div className="hoja hoja-aviso">
+          <strong>
+            {porRevisar} {porRevisar === 1 ? 'ítem' : 'ítems'} para revisar antes de estudiarlos
+          </strong>
+          <p style={{ margin: '0.3rem 0 0.6rem' }} className="apunte">
+            Claude los trajo, pero no están en tu apunte. Pueden ser correctos igual; tu profesor
+            evalúa del suyo.
+          </p>
+          <a className="boton boton-chico boton-guia" href="#/revisar">Revisarlos</a>
+        </div>
       )}
 
       <section className="seccion">

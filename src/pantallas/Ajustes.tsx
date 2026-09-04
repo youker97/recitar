@@ -45,6 +45,10 @@ export function Ajustes() {
             <strong>Fechas de prueba</strong>
             <span>Con la fecha, la app reparte la carga en vez de dejártela toda para el final.</span>
           </a>
+          <a className="accion" href="#/revisar">
+            <strong>Para revisar</strong>
+            <span>Lo que Claude trajo y no está en tu apunte. Míralo antes de estudiarlo.</span>
+          </a>
           <a className="accion" href="#/errores">
             <strong>Registro de errores</strong>
             <span>Todo lo que has fallado, con cuántas veces y cuáles fueron graves.</span>

@@ -10,6 +10,7 @@ import type { Item, SeccionApunte } from '../datos/tipos'
 import { validarPaquete, aItems, type ErrorImportacion } from '../datos/esquema'
 import { fusionarSecciones, mapaDesdeClaude, type TemaDeClaude } from './mapa'
 import { normalizar } from './comparar'
+import { auditar } from './auditoria'
 
 export interface Entrega {
   /** Número que puso Claude, para saber por dónde va. */
@@ -21,6 +22,8 @@ export interface Entrega {
   perdidos: string[]
   /** Ítems cuya "seccion" no calza con ningún tema conocido. */
   sinTema: number
+  /** Cuántos quedaron marcados para revisar contra el apunte. */
+  porRevisar: number
   errores: ErrorImportacion[]
 }
 
@@ -81,6 +84,12 @@ export function abrirEntrega(d: Descarga): Entrega | { error: string } {
     return { ...item, bloque: d.bloque, seccion: propuesta ?? item.seccion }
   })
 
+  // Lo que llegó se compara con el apunte: un modelo trae cosas ciertas que
+  // no están en TU texto, y tu profesor evalúa del suyo.
+  const reparos = new Map(auditar(items, d.fuenteTexto).map((r) => [r.itemId, r.motivos]))
+  const revisados = items.map((i) =>
+    reparos.has(i.id) ? { ...i, revisar: reparos.get(i.id) } : i)
+
   if (secciones.length === d.previas.length && items.length === 0) {
     return { error: 'La entrega no trae ni temas ni preguntas que se puedan usar.' }
   }
@@ -89,9 +98,10 @@ export function abrirEntrega(d: Descarga): Entrega | { error: string } {
     numero: typeof bruto.entrega === 'number' ? bruto.entrega : undefined,
     total: typeof bruto.de === 'number' ? bruto.de : undefined,
     secciones,
-    items,
+    items: revisados,
     perdidos: traido.perdidos,
     sinTema,
+    porRevisar: reparos.size,
     errores: validado.errores,
   }
 }

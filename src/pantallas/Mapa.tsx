@@ -359,6 +359,7 @@ function ArmarMapa({
   const [aviso, setAviso] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [detalle, setDetalle] = useState<string[]>([])
+  const [porRevisar, setPorRevisar] = useState(0)
 
   // Un apunte chico viaja dentro del pedido; uno grande se adjunta en Claude,
   // que además lee el documento de verdad y no mi extracción del PDF.
@@ -419,6 +420,7 @@ function ArmarMapa({
     setPegado('')
     setAviso(resumirEntrega(abierta, previas.length))
     setDetalle(pendientes)
+    setPorRevisar(abierta.porRevisar)
   }
 
   return (
@@ -430,6 +432,13 @@ function ArmarMapa({
 
       {aviso && <p className="verde">{aviso}</p>}
       {detalle.map((d, i) => <p key={i} className="apunte">{d}</p>)}
+      {porRevisar > 0 && (
+        <p className="apunte">
+          {porRevisar} {porRevisar === 1 ? 'ítem quedó marcado' : 'ítems quedaron marcados'} para
+          revisar: no {porRevisar === 1 ? 'salió' : 'salieron'} de tu apunte.{' '}
+          <a href="#/revisar">Verlos</a>
+        </p>
+      )}
       {error && <div className="aviso-error">{error}</div>}
 
       <ol className="pasos" style={{ margin: '0.6rem 0 0.9rem' }}>
