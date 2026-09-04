@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
-import { useCursoActivo, useCursos, useFuentes, useItems } from '../datos/hooks'
-import { db, guardarAjustes } from '../datos/db'
-import { borrarCurso, borrarItem, crearCurso, guardarItem, reiniciarProgreso } from '../datos/repos'
+import { useCursoActivo, useItems } from '../datos/hooks'
+import { borrarItem, guardarItem } from '../datos/repos'
 import { resumenDeItem } from '../logica/resumen'
 import { NOMBRE_TIPO, type Item } from '../datos/tipos'
 import { normalizar } from '../logica/comparar'
@@ -20,20 +19,9 @@ function agruparPorSeccion(lista: Item[]): [string, Item[]][] {
 }
 
 export function Material() {
-  const cursos = useCursos()
   const curso = useCursoActivo()
   const items = useItems(curso?.id)
-  const fuentes = useFuentes(curso?.id)
   const [busqueda, setBusqueda] = useState('')
-  const [nombreNuevo, setNombreNuevo] = useState('')
-  const [nombreCurso, setNombreCurso] = useState('')
-
-  // El campo arranca con el nombre que tiene, y se sigue si cambias de curso.
-  const [ultimoCurso, setUltimoCurso] = useState<string | undefined>(undefined)
-  if (curso && curso.id !== ultimoCurso) {
-    setUltimoCurso(curso.id)
-    setNombreCurso(curso.nombre)
-  }
 
   const porBloque = useMemo(() => {
     const filtro = normalizar(busqueda)
@@ -50,129 +38,16 @@ export function Material() {
 
   const hijosDe = (id: string) => items.filter((i) => i.padreId === id)
 
-  /**
-   * Cambiar el nombre de un curso. Hace falta de verdad: el curso de ejemplo
-   * se llamaba "Civil — ejemplo" y muchos apuntes propios terminaron adentro,
-   * así que quedan cursos con nombre equivocado y material bueno.
-   */
-  async function renombrar() {
-    const nombre = nombreCurso.trim()
-    if (!curso || !nombre || nombre === curso.nombre) return
-    await db.cursos.put({ ...curso, nombre, actualizadoEn: Date.now() })
-  }
-
-  async function nuevoCurso() {
-    const nombre = nombreNuevo.trim()
-    if (!nombre) return
-    const creado = await crearCurso(nombre)
-    await guardarAjustes({ cursoActivoId: creado.id })
-    setNombreNuevo('')
-  }
-
   return (
     <div>
       <div className="titulo-seccion">
-        <h1>Material</h1>
-        <span className="lado numeral">{cursos.length} {cursos.length === 1 ? 'curso' : 'cursos'}</span>
-      </div>
-      <p className="apunte">
-        El inventario de un curso: qué apuntes tiene cargados y qué preguntas salieron de ellos.
-        Para trabajar un tema, el Mapa; para meter archivos nuevos, Importar.
-      </p>
-
-      <div className="grilla-dos seccion">
-        <label className="campo">
-          <span>Cómo se llama este curso</span>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <input
-              type="text"
-              value={nombreCurso}
-              placeholder="Ej: Derecho Penal II"
-              onChange={(e) => setNombreCurso(e.target.value)}
-            />
-            <button
-              type="button"
-              className="boton"
-              disabled={!curso || !nombreCurso.trim() || nombreCurso.trim() === curso.nombre}
-              onClick={renombrar}
-            >
-              Cambiar
-            </button>
-          </div>
-          <span className="apunte">
-            El curso se elige arriba, en la cinta. Acá se le cambia el nombre.
-          </span>
-        </label>
-        <label className="campo">
-          <span>Curso nuevo</span>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <input
-              type="text"
-              value={nombreNuevo}
-              placeholder="Ej: Procesal III"
-              onChange={(e) => setNombreNuevo(e.target.value)}
-            />
-            <button type="button" className="boton" onClick={nuevoCurso}>Crear</button>
-          </div>
-        </label>
-      </div>
-
-      <div className="botonera seccion">
-        <a className="boton boton-fuerte" href="#/importar">Importar apuntes</a>
-        <a className="boton" href="#/editor">Escribir un ítem</a>
-      </div>
-
-      <section className="seccion">
-        <div className="titulo-seccion">
-          <h2>Apuntes</h2>
-          <span className="lado numeral">{fuentes.length}</span>
-        </div>
-        {fuentes.length === 0 ? (
-          <p className="apunte">
-            Todavía no hay apuntes en este curso. Puedes importar varios archivos de una vez.
-          </p>
-        ) : (
-          <ul className="lista-limpia">
-            {fuentes.map((f) => {
-              const secciones = f.secciones ?? []
-              const cubiertas = secciones.filter((x) => x.cubierta).length
-              return (
-                <li key={f.id} className="renglon">
-                  <div className="crece">
-                    <div className="estudio" style={{ fontSize: '1.02rem' }}>{f.titulo}</div>
-                    <div className="apunte">
-                      {f.bloque} · {secciones.length} temas · {cubiertas} con la pasada hecha ·{' '}
-                      {Math.round(f.texto.length / 1000)} mil caracteres
-                    </div>
-                  </div>
-                  <div className="botonera">
-                    <button type="button" className="boton boton-chico" onClick={() => ir('/mapa')}>Temas</button>
-                    <button type="button" className="boton boton-chico" onClick={() => ir(`/pasada?fuente=${f.id}`)}>Pasada</button>
-                    <button
-                      type="button"
-                      className="boton boton-chico boton-peligro"
-                      onClick={() => {
-                        if (window.confirm(`¿Borrar el apunte “${f.titulo}”? Las preguntas que ya generaste no se borran.`)) {
-                          db.fuentes.delete(f.id)
-                        }
-                      }}
-                    >
-                      Borrar
-                    </button>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
-
-      <hr className="filete" />
-
-      <div className="titulo-seccion">
-        <h2>Preguntas</h2>
+        <h1>Preguntas</h1>
         <span className="lado numeral">{items.filter((i) => !i.padreId).length}</span>
       </div>
+      <p className="apunte">
+        Todo lo que hay para estudiar en {curso ? `«${curso.nombre}»` : 'este ramo'}, una por una.
+        Para trabajar un tema completo, Apuntes; para traer más, Cargar la app.
+      </p>
 
       <label className="campo">
         <span>Buscar</span>
@@ -255,38 +130,6 @@ export function Material() {
         ))
       )}
 
-      {curso && (
-        <>
-          <hr className="filete" />
-          <section className="seccion">
-            <h2>Este curso</h2>
-            <div className="botonera">
-              <button
-                type="button"
-                className="boton boton-peligro"
-                onClick={() => {
-                  if (window.confirm(`Se borra el avance de "${curso.nombre}" pero se conserva el material. ¿Seguro?`)) {
-                    reiniciarProgreso(curso.id)
-                  }
-                }}
-              >
-                Reiniciar el avance
-              </button>
-              <button
-                type="button"
-                className="boton boton-peligro"
-                onClick={() => {
-                  if (window.confirm(`Se borra "${curso.nombre}" entero, con material y avance. ¿Seguro?`)) {
-                    borrarCurso(curso.id)
-                  }
-                }}
-              >
-                Borrar el curso
-              </button>
-            </div>
-          </section>
-        </>
-      )}
     </div>
   )
 }

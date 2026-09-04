@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { db, guardarAjustes } from '../datos/db'
-import { useAjustes, useCursoActivo } from '../datos/hooks'
+import { useAjustes, useCursoActivo, useCursos } from '../datos/hooks'
+import { borrarCurso, crearCurso, reiniciarProgreso } from '../datos/repos'
 import { INTERVALOS_LEITNER } from '../logica/programador'
 import { exportarTodo, descargar, restaurarDesde } from '../importar/respaldo'
 import { aEscudo } from '../logica/imagen'
@@ -9,6 +10,10 @@ import { Escudo } from '../componentes/Identidad'
 export function Ajustes() {
   const ajustes = useAjustes()
   const curso = useCursoActivo()
+  const cursos = useCursos()
+  const [nombreCurso, setNombreCurso] = useState('')
+  const [nombreNuevo, setNombreNuevo] = useState('')
+  const [ultimoCurso, setUltimoCurso] = useState<string | undefined>(undefined)
   const [mensaje, setMensaje] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,6 +36,26 @@ export function Ajustes() {
     }
   }
 
+  // El campo del nombre arranca con el que tiene y sigue al ramo activo.
+  if (curso && curso.id !== ultimoCurso) {
+    setUltimoCurso(curso.id)
+    setNombreCurso(curso.nombre)
+  }
+
+  async function renombrar() {
+    const nombre = nombreCurso.trim()
+    if (!curso || !nombre || nombre === curso.nombre) return
+    await db.cursos.put({ ...curso, nombre, actualizadoEn: Date.now() })
+  }
+
+  async function nuevoRamo() {
+    const nombre = nombreNuevo.trim()
+    if (!nombre) return
+    const creado = await crearCurso(nombre)
+    await guardarAjustes({ cursoActivoId: creado.id })
+    setNombreNuevo('')
+  }
+
   return (
     <div>
       <div className="titulo-seccion"><h1>Ajustes</h1></div>
@@ -39,29 +64,72 @@ export function Ajustes() {
       {error && <div className="aviso-error">{error}</div>}
 
       <section className="seccion">
-        <h2>Ir a</h2>
-        <div className="acciones">
-          <a className="accion" href="#/pruebas">
-            <strong>Fechas de prueba</strong>
-            <span>Con la fecha, la app reparte la carga en vez de dejártela toda para el final.</span>
-          </a>
-          <a className="accion" href="#/revisar">
-            <strong>Para revisar</strong>
-            <span>Las preguntas que apartaste por malas, para corregirlas o borrarlas.</span>
-          </a>
-          <a className="accion" href="#/errores">
-            <strong>Registro de errores</strong>
-            <span>Todo lo que has fallado, con cuántas veces y cuáles fueron graves.</span>
-          </a>
-          <a className="accion" href="#/material">
-            <strong>Material</strong>
-            <span>Los apuntes y las preguntas de este curso, una por una.</span>
-          </a>
-          <a className="accion" href="#/importar">
-            <strong>Importar</strong>
-            <span>Meter apuntes, PDF o preguntas nuevas.</span>
-          </a>
+        <h2>Mis ramos</h2>
+        <p className="apunte">
+          El ramo con el que estás trabajando se elige en el menú, arriba a la izquierda. Acá se
+          crean, se les cambia el nombre y se borran.
+        </p>
+        <div className="grilla-dos">
+          <label className="campo">
+            <span>Cómo se llama este ramo</span>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <input
+                type="text"
+                value={nombreCurso}
+                placeholder="Ej: Derecho Penal II"
+                onChange={(e) => setNombreCurso(e.target.value)}
+              />
+              <button
+                type="button"
+                className="boton"
+                disabled={!curso || !nombreCurso.trim() || nombreCurso.trim() === curso.nombre}
+                onClick={renombrar}
+              >
+                Cambiar
+              </button>
+            </div>
+          </label>
+          <label className="campo">
+            <span>Un ramo nuevo</span>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <input
+                type="text"
+                value={nombreNuevo}
+                placeholder="Ej: Procesal III"
+                onChange={(e) => setNombreNuevo(e.target.value)}
+              />
+              <button type="button" className="boton" onClick={nuevoRamo}>Crear</button>
+            </div>
+          </label>
         </div>
+        {curso && (
+          <div className="botonera" style={{ marginTop: '0.75rem' }}>
+            <button
+              type="button"
+              className="boton boton-peligro"
+              onClick={() => {
+                if (window.confirm(`Se borra el avance de «${curso.nombre}» pero se conserva el material. ¿Seguro?`)) {
+                  reiniciarProgreso(curso.id)
+                }
+              }}
+            >
+              Reiniciar el avance
+            </button>
+            <button
+              type="button"
+              className="boton boton-peligro"
+              disabled={cursos.length < 2}
+              title={cursos.length < 2 ? 'Es el único ramo que tienes' : undefined}
+              onClick={() => {
+                if (window.confirm(`Se borra «${curso.nombre}» entero, con material y avance. ¿Seguro?`)) {
+                  borrarCurso(curso.id)
+                }
+              }}
+            >
+              Borrar este ramo
+            </button>
+          </div>
+        )}
       </section>
 
       <hr className="filete" />
@@ -322,7 +390,6 @@ export function Ajustes() {
             Borrar todo y empezar de cero
           </button>
         </div>
-        {curso && <p className="apunte">Curso activo: {curso.nombre}</p>}
       </section>
     </div>
   )
