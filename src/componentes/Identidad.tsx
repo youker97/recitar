@@ -83,24 +83,33 @@ function Camiseta() {
 }
 
 /**
- * La Copa Libertadores. Vale la pena dibujarla como es y no una copa
- * cualquiera: la Libertadores NO tiene asas.
+ * La Copa Libertadores.
  *
  * La hizo Alberto de Gasperi en 1959 y se forjó en la joyería Camusso, en la
- * avenida Colonial de Lima. Es un cáliz de plata de ley, hondo y sin asas,
- * coronado por un futbolista —ese va en bronce plateado— parado sobre la
- * tapa, y montado en un pedestal de madera donde van los escudos de todos los
- * campeones.
+ * avenida Colonial de Lima. No se parece a una copa de fútbol cualquiera, y
+ * eso es justo lo que hay que dibujar:
+ *
+ * - El cuerpo es una ESFERA, no un cáliz.
+ * - SÍ tiene asas: dos, cilíndricas, saliendo a los lados a la altura del
+ *   ecuador, unidas por una banda que cruza la esfera de lado a lado. Esa
+ *   silueta —una bola con orejas— es lo que la hace reconocible de lejos.
+ * - Arriba, un futbolista rematando (bronce plateado).
+ * - Abajo, un cuello corto, un pie en forma de trompeta y un pedestal
+ *   cilíndrico alto con los escudos de todos los campeones.
+ *
+ * Las proporciones están medidas sobre una foto de la copa y llevadas a la
+ * caja de 24: esfera de radio 2.5 centrada en 5.7, asas de 8.4 a 15.6, y el
+ * pedestal ocupando el tercio de abajo.
+ *
+ * Se usa a 21 px en el botón del menú y a 26 px en el remate de la pantalla
+ * de hoy, así que se dibujó mirándola a ESOS tamaños, ampliada. A 21 px no
+ * hay figura humana que se lea: el futbolista es una silueta y lo que se
+ * reconoce es la esfera con sus asas.
  *
  * Colo-Colo la levantó en 1991. Por eso está acá.
- *
- * Se usa a 21 px en el botón del menú y a 26 px en el remate de la pantalla de
- * hoy. A ese tamaño no hay figura humana que se lea, así que el futbolista es
- * una silueta parada en su peana: el detalle que se nota es la silueta del
- * cáliz y el pedestal, y eso es lo que la distingue de una copa cualquiera.
  */
 export function Copa({ tamano = 24 }: { tamano?: number }) {
-  const fino = tamano >= 22
+  const fino = tamano >= 30
   return (
     <svg
       width={tamano}
@@ -108,23 +117,38 @@ export function Copa({ tamano = 24 }: { tamano?: number }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={fino ? 1.4 : 1.7}
+      strokeWidth={fino ? 1.2 : 1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {/* El futbolista, parado en la tapa. */}
-      <circle cx="12" cy="2.4" r={fino ? 1 : 1.2} fill="currentColor" stroke="none" />
-      <path d="M12 3.6v2" />
-      <path d="M10.5 5.9h3" />
-      {/* El cáliz: boca ancha, cuerpo hondo, sin asas. */}
-      <path d="M6.2 6.9h11.6" />
-      <path d="M7.1 6.9l.55 4.6c.28 2.35 2.1 3.6 4.35 3.6s4.07-1.25 4.35-3.6L16.9 6.9" />
-      {/* Pie y pedestal con los escudos de los campeones. */}
-      <path d="M12 15.1v1.9" />
-      <path d="M9.6 17h4.8" />
-      <path d="M7.7 17.9h8.6v4H7.7z" />
-      {fino && <path d="M7.7 19.9h8.6" opacity="0.4" />}
+      {/* El futbolista rematando. */}
+      {fino ? (
+        <>
+          <circle cx="11.5" cy="1.5" r="0.6" fill="currentColor" stroke="none" />
+          <path d="M11.5 2.2v1.2" />
+          <path d="M10.4 2.6l1.1-.2 1.6.4" />
+          <path d="M11.5 3.4l1 .6" />
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="1.6" r="0.85" fill="currentColor" stroke="none" />
+          <path d="M12 2.7v1" />
+        </>
+      )}
+      {/* La esfera, con la banda y las dos asas. */}
+      <circle cx="12" cy="5.7" r="2.5" />
+      <path d="M8.4 5.7h7.2" />
+      <path d="M8.4 4.9v1.6M15.6 4.9v1.6" />
+      {/* Cuello y pie de trompeta. */}
+      <path d="M12 8.2v.8" />
+      <path d="M11.3 9c0 2.6-.4 3.6-1.1 4.4M12.7 9c0 2.6.4 3.6 1.1 4.4" />
+      <path d="M10.2 13.4h3.6" />
+      {/* El pedestal con los escudos de los campeones. */}
+      <path d="M8.8 14.7h6.4l-1.4-1.3h-3.6z" />
+      <path d="M8.8 14.7h6.4v6.1H8.8z" />
+      {fino && <path d="M8.8 16.2h6.4M8.8 17.7h6.4M8.8 19.2h6.4" opacity="0.4" />}
+      <path d="M8.4 20.8h7.2v1.4H8.4z" />
     </svg>
   )
 }
