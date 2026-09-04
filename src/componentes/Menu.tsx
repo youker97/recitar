@@ -4,7 +4,7 @@ import { useAjustes, useCursoActivo, useCursos, useDatos, useFuentes } from '../
 import { calcularAlcance, filtrarPorAlcance } from '../logica/alcance'
 import { contarPendientes } from '../logica/cola'
 import { ir } from '../rutas'
-import { Escudo } from './Identidad'
+import { Copa, Escudo } from './Identidad'
 import { Icono, type NombreIcono } from './Iconos'
 
 /**
@@ -203,7 +203,7 @@ export function Menu({ abierto, cerrar, ruta }: Props) {
             </button>
           ) : (
             <button className="menu-principal" onClick={() => irA('/estudiar')}>
-              <Icono nombre="estudiar" /> Estudiar lo de hoy
+              <Copa tamano={21} /> Estudiar lo de hoy
               {hoyDelActivo > 0 && <span className="numeral">{hoyDelActivo}</span>}
             </button>
           )}

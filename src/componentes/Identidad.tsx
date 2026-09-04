@@ -82,17 +82,49 @@ function Camiseta() {
   )
 }
 
-function Copa() {
+/**
+ * La Copa Libertadores. Vale la pena dibujarla como es y no una copa
+ * cualquiera: la Libertadores NO tiene asas.
+ *
+ * La hizo Alberto de Gasperi en 1959 y se forjó en la joyería Camusso, en la
+ * avenida Colonial de Lima. Es un cáliz de plata de ley, hondo y sin asas,
+ * coronado por un futbolista —ese va en bronce plateado— parado sobre la
+ * tapa, y montado en un pedestal de madera donde van los escudos de todos los
+ * campeones.
+ *
+ * Colo-Colo la levantó en 1991. Por eso está acá.
+ *
+ * Se usa a 21 px en el botón del menú y a 26 px en el remate de la pantalla de
+ * hoy. A ese tamaño no hay figura humana que se lea, así que el futbolista es
+ * una silueta parada en su peana: el detalle que se nota es la silueta del
+ * cáliz y el pedestal, y eso es lo que la distingue de una copa cualquiera.
+ */
+export function Copa({ tamano = 24 }: { tamano?: number }) {
+  const fino = tamano >= 22
   return (
-    <svg width="24" height="26" viewBox="0 0 32 32" aria-hidden="true">
-      <path
-        d="M10 4h12v7a6 6 0 0 1-12 0z M10 6H6.5v2.5A4.5 4.5 0 0 0 10 12.8 M22 6h3.5v2.5A4.5 4.5 0 0 1 22 12.8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-      <path d="M16 17v5M12 27h8l-1-4h-6z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+    <svg
+      width={tamano}
+      height={tamano}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={fino ? 1.4 : 1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* El futbolista, parado en la tapa. */}
+      <circle cx="12" cy="2.4" r={fino ? 1 : 1.2} fill="currentColor" stroke="none" />
+      <path d="M12 3.6v2" />
+      <path d="M10.5 5.9h3" />
+      {/* El cáliz: boca ancha, cuerpo hondo, sin asas. */}
+      <path d="M6.2 6.9h11.6" />
+      <path d="M7.1 6.9l.55 4.6c.28 2.35 2.1 3.6 4.35 3.6s4.07-1.25 4.35-3.6L16.9 6.9" />
+      {/* Pie y pedestal con los escudos de los campeones. */}
+      <path d="M12 15.1v1.9" />
+      <path d="M9.6 17h4.8" />
+      <path d="M7.7 17.9h8.6v4H7.7z" />
+      {fino && <path d="M7.7 19.9h8.6" opacity="0.4" />}
     </svg>
   )
 }
@@ -109,9 +141,9 @@ function Balon() {
 }
 
 const ADORNOS = [
-  { dibujo: <Estrellas cuantas={3} />, texto: 'Campeón de América · 1991' },
+  { dibujo: <Estrellas cuantas={3} />, texto: 'Las tres del 91' },
   { dibujo: <Camiseta />, texto: 'El 14' },
-  { dibujo: <Copa />, texto: 'Se juega como se entrena' },
+  { dibujo: <Copa tamano={26} />, texto: 'Campeón de América · 1991' },
   { dibujo: <Balon />, texto: 'Cacique' },
 ]
 
