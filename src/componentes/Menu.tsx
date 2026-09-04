@@ -1,27 +1,25 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { guardarAjustes } from '../datos/db'
-import { useAjustes, useCursos, useDatos, useFuentes } from '../datos/hooks'
+import { useAjustes, useCursoActivo, useCursos, useDatos, useFuentes } from '../datos/hooks'
 import { calcularAlcance, filtrarPorAlcance } from '../logica/alcance'
 import { contarPendientes } from '../logica/cola'
 import { ir } from '../rutas'
 import { Escudo } from './Identidad'
+import { Icono, type NombreIcono } from './Iconos'
 
 /**
- * El menú lateral, como el de la app de Claude: entra deslizando desde el
- * borde izquierdo, tapa la pantalla con un velo y adentro está TODO lo que la
- * app sabe hacer, agrupado por zonas y con el ramo en cada zona.
+ * El menú lateral, hecho a imagen del de la app de Claude: entra deslizando
+ * desde el borde izquierdo, deja ver un trozo de la pantalla de atrás, cada
+ * fila lleva su icono, los rótulos son suaves, y abajo flota una barra con el
+ * escudo (que lleva a Ajustes, como el avatar de la cuenta) y la acción
+ * principal, que allá es "Nuevo chat" y acá es estudiar lo de hoy.
  *
- * Por qué así y no con pestañas:
+ * Lo único propio: el ramo va DENTRO de cada zona. Con pestañas el ramo era un
+ * dato aparte y había que acordarse de mirarlo; acá no se entra a ninguna zona
+ * sin decir de cuál, porque el ramo ES el botón. Se acabó el "por qué me sale
+ * Civil".
  *
- * - Con pestañas, el ramo era un dato aparte —una chapa arriba a la derecha—
- *   y había que acordarse de mirarlo. Acá no entras a ninguna zona sin decir
- *   de qué ramo, porque el ramo ES el botón. Se acaba el "por qué me sale
- *   Civil".
- * - Cabían cuatro pestañas y la app hace más de cuatro cosas, así que el
- *   resto vivía escondido dentro de Ajustes, que es donde nadie busca
- *   "escribir una pregunta".
- *
- * Se cierra tocando el velo, deslizando hacia la izquierda, con Escape o al
+ * Se cierra tocando fuera, deslizando hacia la izquierda, con Escape o al
  * elegir cualquier cosa.
  */
 
@@ -48,6 +46,7 @@ function pendientesDelCurso(
 export function Menu({ abierto, cerrar, ruta }: Props) {
   const ajustes = useAjustes()
   const cursos = useCursos()
+  const activo = useCursoActivo()
   const datos = useDatos()
   const fuentes = useFuentes()
   const panel = useRef<HTMLDivElement>(null)
@@ -67,6 +66,8 @@ export function Menu({ abierto, cerrar, ruta }: Props) {
       })),
     [cursos, datos, fuentes, ajustes.nuevosPorDia],
   )
+
+  const hoyDelActivo = resumen.find((r) => r.curso.id === activo?.id)?.hoy ?? 0
 
   // Con el menú abierto no se desplaza lo de atrás: si no, se cierra el menú y
   // la pantalla quedó en otra parte.
@@ -93,9 +94,34 @@ export function Menu({ abierto, cerrar, ruta }: Props) {
    * Se marca la fila donde estás. Para las zonas por ramo no basta la ruta:
    * si no, con dos ramos se encienden los dos y deja de significar nada.
    */
-  const activa = (r: string, cursoId?: string) => {
-    const aqui = ruta === r && (!cursoId || cursoId === ajustes.cursoActivoId)
-    return aqui ? 'menu-fila menu-fila-activa' : 'menu-fila'
+  function esAqui(r: string, cursoId?: string) {
+    return ruta === r && (!cursoId || cursoId === ajustes.cursoActivoId)
+  }
+
+  function Fila(
+    { icono, destino, cursoId, texto, cuenta, apagada }: {
+      icono: NombreIcono
+      destino: string
+      cursoId?: string
+      texto: string
+      cuenta?: number
+      apagada?: boolean
+    },
+  ) {
+    return (
+      <button
+        className={`menu-fila${esAqui(destino, cursoId) ? ' menu-fila-activa' : ''}`}
+        onClick={() => irA(destino, cursoId)}
+      >
+        <Icono nombre={icono} />
+        <span className="crece">{texto}</span>
+        {cuenta !== undefined && (
+          <span className={`menu-cuenta numeral${apagada || cuenta === 0 ? ' menu-cuenta-cero' : ''}`}>
+            {cuenta}
+          </span>
+        )}
+      </button>
+    )
   }
 
   return (
@@ -115,94 +141,73 @@ export function Menu({ abierto, cerrar, ruta }: Props) {
         ref={panel}
       >
         <div className="menu-cabeza">
-          <span className="marca">
-            {ajustes.escudo
-              ? <img className="emblema" src={ajustes.escudo} alt="" />
-              : <Escudo />}
-            Recitar<span>.</span>
-          </span>
-          <button className="menu-cerrar" onClick={cerrar} aria-label="Cerrar el menú">✕</button>
+          <span className="menu-marca">Recitar<span>.</span></span>
         </div>
 
         <nav className="menu-cuerpo">
           {cursos.length === 0 ? (
-            <>
-              <p className="menu-nota">
-                Todavía no hay ningún ramo. Trae un apunte y la app arma el resto.
-              </p>
-              <button className="menu-fila menu-fila-fuerte" onClick={() => irA('/importar')}>
-                <span className="crece">Meter mi primer apunte</span>
-              </button>
-            </>
+            <p className="menu-nota">
+              Todavía no hay ningún ramo. Trae un apunte y la app arma el resto.
+            </p>
           ) : (
             <>
               <p className="menu-rotulo">Estudiar</p>
               {resumen.map(({ curso, hoy }) => (
-                <button
-                  key={curso.id}
-                  className={activa('/', curso.id)}
-                  onClick={() => irA('/', curso.id)}
-                >
-                  <span className="crece">{curso.nombre}</span>
-                  <span className={`menu-cuenta numeral${hoy === 0 ? ' menu-cuenta-cero' : ''}`}>
-                    {hoy}
-                  </span>
-                </button>
+                <Fila key={curso.id} icono="estudiar" destino="/" cursoId={curso.id}
+                      texto={curso.nombre} cuenta={hoy} />
               ))}
 
               <p className="menu-rotulo">Preguntas</p>
               {resumen.map(({ curso, preguntas }) => (
-                <button
-                  key={curso.id}
-                  className={activa('/material', curso.id)}
-                  onClick={() => irA('/material', curso.id)}
-                >
-                  <span className="crece">{curso.nombre}</span>
-                  <span className="menu-cuenta numeral menu-cuenta-cero">{preguntas}</span>
-                </button>
+                <Fila key={curso.id} icono="preguntas" destino="/material" cursoId={curso.id}
+                      texto={curso.nombre} cuenta={preguntas} apagada />
               ))}
 
               <p className="menu-rotulo">Apuntes</p>
               {resumen.map(({ curso, apuntes }) => (
-                <button
-                  key={curso.id}
-                  className={activa('/mapa', curso.id)}
-                  onClick={() => irA('/mapa', curso.id)}
-                >
-                  <span className="crece">{curso.nombre}</span>
-                  <span className="menu-cuenta numeral menu-cuenta-cero">{apuntes}</span>
-                </button>
+                <Fila key={curso.id} icono="apuntes" destino="/mapa" cursoId={curso.id}
+                      texto={curso.nombre} cuenta={apuntes} apagada />
               ))}
 
               <p className="menu-rotulo">Cargar la app</p>
-              <button className={activa('/importar')} onClick={() => irA('/importar')}>
-                <span className="crece">Meter un apunte</span>
-              </button>
-              <button className={activa('/editor')} onClick={() => irA('/editor')}>
-                <span className="crece">Escribir una pregunta a mano</span>
-              </button>
+              <Fila icono="traer" destino="/importar" texto="Meter un apunte" />
+              <Fila icono="escribir" destino="/editor" texto="Escribir una pregunta a mano" />
 
-              <hr className="menu-filete" />
-
-              <button className={activa('/estadisticas')} onClick={() => irA('/estadisticas')}>
-                <span className="crece">Cómo voy</span>
-              </button>
-              <button className={activa('/revisar')} onClick={() => irA('/revisar')}>
-                <span className="crece">Preguntas apartadas</span>
-                {porRevisar > 0 && <span className="menu-cuenta numeral">{porRevisar}</span>}
-              </button>
-              <button className={activa('/errores')} onClick={() => irA('/errores')}>
-                <span className="crece">Registro de errores</span>
-              </button>
-              <button className={activa('/pruebas')} onClick={() => irA('/pruebas')}>
-                <span className="crece">Fechas de prueba</span>
-              </button>
-              <button className={activa('/ajustes')} onClick={() => irA('/ajustes')}>
-                <span className="crece">Ajustes</span>
-              </button>
+              <p className="menu-rotulo">Más</p>
+              <Fila icono="progreso" destino="/estadisticas" texto="Cómo voy" />
+              <Fila icono="apartadas" destino="/revisar" texto="Preguntas apartadas"
+                    cuenta={porRevisar > 0 ? porRevisar : undefined} />
+              <Fila icono="errores" destino="/errores" texto="Registro de errores" />
+              <Fila icono="calendario" destino="/pruebas" texto="Fechas de prueba" />
             </>
           )}
         </nav>
+
+        {/* La barra de abajo, como la de Claude: la cuenta a la izquierda y la
+            acción principal en una pastilla. Flota sobre la lista, así queda a
+            mano con el pulgar sin importar cuánto se haya desplazado. */}
+        <div className="menu-pie">
+          <button
+            className={`menu-avatar${esAqui('/ajustes') ? ' menu-avatar-activo' : ''}`}
+            onClick={() => irA('/ajustes')}
+            aria-label="Ajustes"
+            title="Ajustes"
+          >
+            {ajustes.escudo
+              ? <img src={ajustes.escudo} alt="" />
+              : <Escudo tamano={22} />}
+          </button>
+          {cursos.length === 0 ? (
+            <button className="menu-principal" onClick={() => irA('/importar')}>
+              <Icono nombre="traer" /> Meter mi primer apunte
+            </button>
+          ) : (
+            <button className="menu-principal" onClick={() => irA('/estudiar')}>
+              <Icono nombre="estudiar" /> Estudiar lo de hoy
+              {hoyDelActivo > 0 && <span className="numeral">{hoyDelActivo}</span>}
+            </button>
+          )}
+        </div>
       </div>
     </>
   )

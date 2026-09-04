@@ -861,14 +861,15 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 
 /* ---------- el menú lateral ---------- */
 
-/* Entra desde el borde izquierdo, como el de la app de Claude: adentro está
-   todo lo que la app hace, por zonas, y el ramo es el botón de cada zona. */
+/* Hecho a imagen del de la app de Claude: entra desde el borde izquierdo, deja
+   ver un trozo de la pantalla de atrás, cada fila lleva icono, los rótulos son
+   suaves y abajo flota la barra con el escudo y la acción principal. */
 
 .menu-velo {
   position: fixed;
   inset: 0;
   z-index: 30;
-  background: rgba(10, 10, 12, 0.45);
+  background: rgba(8, 8, 10, 0.5);
   opacity: 0;
   visibility: hidden;
   transition: opacity 180ms ease, visibility 0s linear 180ms;
@@ -885,17 +886,18 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   left: 0;
   bottom: 0;
   z-index: 31;
-  width: min(20rem, 84vw);
+  /* Nunca toda la pantalla: el trozo que queda a la derecha es lo que te dice
+     que tocando ahí vuelves. */
+  width: min(21rem, 84vw);
   display: flex;
   flex-direction: column;
-  background: var(--papel-alto);
+  background: var(--papel-hondo);
   border-right: 1px solid var(--linea);
   box-shadow: var(--sombra-2);
   transform: translateX(-100%);
   visibility: hidden;
   transition: transform 200ms cubic-bezier(0.2, 0, 0, 1), visibility 0s linear 200ms;
   padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 .menu-abierto {
   transform: translateX(0);
@@ -908,94 +910,86 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
   .menu, .menu-velo { transition-duration: 0s; }
 }
 
-.menu-cabeza {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.8rem 0.9rem 0.6rem;
-  border-bottom: 1px solid var(--linea);
-}
+.menu-cabeza { padding: 1.1rem 1.2rem 0.7rem; }
 
-.menu-cerrar {
-  min-height: 0;
-  padding: 0.2rem 0.5rem;
-  font-size: 1rem;
-  line-height: 1;
-  color: var(--tinta-tenue);
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  cursor: pointer;
+.menu-marca {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--tinta);
 }
-.menu-cerrar:hover { color: var(--tinta); border-color: var(--linea-fuerte); }
+.menu-marca span { color: var(--oro-vivo); }
 
 .menu-cuerpo {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0.5rem 0.6rem 1.5rem;
+  padding: 0.2rem 0.6rem 1rem;
 }
 
+/* Suaves, como el "Recientes" de allá: ordenan sin gritar. */
 .menu-rotulo {
-  margin: 0.9rem 0 0.25rem;
-  padding: 0 0.5rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  margin: 1rem 0 0.2rem;
+  padding: 0 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 500;
   color: var(--tinta-tenue);
 }
-.menu-rotulo:first-child { margin-top: 0.3rem; }
+.menu-rotulo:first-child { margin-top: 0.2rem; }
 
 .menu-nota {
-  margin: 0.4rem 0.5rem 0.8rem;
-  font-size: 0.86rem;
+  margin: 0.4rem 0.6rem;
+  font-size: 0.9rem;
   color: var(--tinta-suave);
 }
 
 .menu-fila {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.8rem;
   width: 100%;
-  min-height: 2.6rem;
-  padding: 0.5rem 0.6rem;
+  min-height: 2.9rem;
+  padding: 0.5rem 0.7rem;
   margin: 0;
   font-family: inherit;
-  font-size: 0.94rem;
+  font-size: 1rem;
   color: var(--tinta);
   text-align: left;
   background: none;
-  border: 1px solid transparent;
-  border-radius: var(--curva-chica);
+  border: 0;
+  border-radius: 999px;
   cursor: pointer;
 }
-.menu-fila .crece { flex: 1; min-width: 0; text-align: left; }
+.menu-fila .crece {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .menu-fila:hover { background: var(--papel-realce); }
 
+/* La fila donde estás: pastilla rellena, sin contorno. */
 .menu-fila-activa {
-  color: var(--oro);
   font-weight: 600;
-  background: color-mix(in srgb, var(--oro-vivo) 12%, transparent);
-  border-color: color-mix(in srgb, var(--oro-vivo) 30%, transparent);
+  background: var(--papel-realce);
 }
+.menu-fila-activa .icono { color: var(--oro); }
 
-.menu-fila-fuerte {
-  justify-content: center;
-  color: var(--sobre-oro);
-  font-weight: 600;
-  background: var(--oro-vivo);
-  border-color: var(--oro-vivo);
+.icono {
+  flex: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  color: var(--tinta-suave);
 }
-.menu-fila-fuerte .crece { flex: 1; text-align: center; }
-.menu-fila-fuerte:hover { background: var(--oro-vivo); filter: brightness(1.05); }
 
 .menu-cuenta {
   flex: none;
   min-width: 1.6rem;
-  padding: 0.08rem 0.4rem;
+  padding: 0.08rem 0.42rem;
   font-size: 0.8rem;
   font-weight: 700;
   text-align: center;
@@ -1005,13 +999,64 @@ textarea.serif { font-family: var(--serif); font-size: 1.05rem; }
 }
 .menu-cuenta-cero {
   color: var(--tinta-tenue);
-  background: var(--papel-realce);
-  font-weight: 600;
+  background: none;
+  font-weight: 500;
 }
 
-.menu-filete {
-  height: 1px;
-  margin: 0.9rem 0.6rem;
-  border: 0;
-  background: var(--linea);
+/* La barra de abajo. Flota sobre la lista y siempre está a mano. */
+.menu-pie {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem calc(0.6rem + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--papel-hondo) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--linea);
 }
+
+.menu-avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  min-height: 0;
+  padding: 0;
+  color: var(--tinta);
+  background: var(--papel-realce);
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.menu-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.menu-avatar-activo { border-color: var(--oro-vivo); }
+
+.menu-principal {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.6rem;
+  padding: 0.4rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--sobre-oro);
+  background: var(--oro-vivo);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.menu-principal .icono { color: var(--sobre-oro); width: 1.15rem; height: 1.15rem; }
+.menu-principal .numeral {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sobre-oro) 16%, transparent);
+}
+.menu-principal:hover { filter: brightness(1.05); }
