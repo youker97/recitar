@@ -15,6 +15,7 @@ import { Volcado } from './pantallas/Volcado'
 import { Pasada } from './pantallas/Pasada'
 import { Mapa } from './pantallas/Mapa'
 import { Vocabulario } from './pantallas/Vocabulario'
+import { Revisar } from './pantallas/Revisar'
 import { Sesion } from './modos/Sesion'
 import { Escudo } from './componentes/Identidad'
 import { SelectorCurso } from './componentes/SelectorCurso'
@@ -73,6 +74,7 @@ export default function App() {
     case '/pasada': pantalla = <Pasada />; break
     case '/mapa': pantalla = <Mapa />; break
     case '/vocabulario': pantalla = <Vocabulario />; break
+    case '/revisar': pantalla = <Revisar />; break
     case '/material': pantalla = <Material />; break
     case '/editor': pantalla = <Editor />; break
     case '/pruebas': pantalla = <Evaluaciones />; break
