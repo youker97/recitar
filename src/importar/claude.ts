@@ -345,3 +345,64 @@ Devuelve SOLO este JSON, dentro de un bloque de código:
   ]
 }`
 }
+
+// ---------------------------------------------------------------------------
+// El mapa del apunte: en qué temas se parte.
+//
+// La app sabe partirlo sola contando títulos, pero eso es reconocer formato,
+// no entender el apunte: no distingue un tema de verdad de un subtítulo
+// suelto, y el corte manda sobre todo lo que viene después. Un tema mal
+// cortado arruina su vocabulario y sus preguntas aunque Claude las haga bien.
+// ---------------------------------------------------------------------------
+
+export function armarPedidoMapa(o: {
+  curso: string
+  titulo: string
+  trozo: TrozoTexto
+}): string {
+  const deParte = o.trozo.total > 1
+    ? `\n\nEste es el trozo ${o.trozo.numero} de ${o.trozo.total} del apunte: parte solo este trozo. Puede que empiece o termine a mitad de un tema; en ese caso el primero o el último quedan incompletos y no importa.`
+    : ''
+
+  return `Estudio Derecho en Chile. Te paso el texto de un apunte de ${o.curso}:
+"${o.titulo}". Necesito partirlo en temas para estudiarlo de a uno.${deParte}
+
+QUÉ ES UN TEMA
+Una unidad con sentido propio: la institución, la doctrina o la materia que el
+profesor trataría de corrido. Ni el apunte entero ni cada subtítulo suelto.
+Piénsalo así: si tuviera que estudiar uno de estos temas en una sentada de 20
+minutos, ¿quedaría con una idea completa o con la mitad de una?
+
+REGLAS
+- Entre 5 y 15 temas. Si el texto da para menos, dame menos: prefiero seis
+  temas con sentido que veinte pedazos.
+- Los títulos dilos TÚ, en cristiano. Si el apunte dice "II.- TEORIA DE LA
+  ANTIJURIDICIDAD", el tema se llama "La antijuridicidad". Si dice "1.-",
+  "2.1.-" y "a)" seguidos y los tres hablan de lo mismo, es UN tema.
+- No dejes huecos: cada tema empieza donde termina el anterior, en orden.
+- Si el apunte trae partes que no son materia (índice, bibliografía, portada),
+  déjalas fuera.
+
+CÓMO TE UBICO CADA TEMA
+En "empieza" copia EXACTAMENTE las primeras 10 palabras del tema, tal como
+están escritas en el texto que te paso, con sus errores si los tiene. Las uso
+para encontrar dónde parte. Si las parafraseas o las corriges, no lo encuentro
+y el tema se pierde.
+
+TEXTO DEL APUNTE
+-----
+${o.trozo.texto}
+-----
+
+Devuelve SOLO este JSON, dentro de un bloque de código:
+
+{
+  "recitar": 1,
+  "temas": [
+    {
+      "titulo": "La antijuridicidad",
+      "empieza": "II.- TEORIA DE LA ANTIJURIDICIDAD La antijuridicidad es la"
+    }
+  ]
+}`
+}

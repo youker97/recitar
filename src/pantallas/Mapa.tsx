@@ -4,10 +4,10 @@ import { guardarItems } from '../datos/repos'
 import { useCursoActivo, useFuentes, useItems } from '../datos/hooks'
 import type { Fuente, SeccionApunte } from '../datos/tipos'
 import { mapaDe } from './Pasada'
-import { detectarSecciones, presentar, textoDeSeccion } from '../logica/mapa'
+import { detectarSecciones, fusionarSecciones, mapaDesdeClaude, presentar, textoDeSeccion } from '../logica/mapa'
 import { normalizar } from '../logica/comparar'
 import { aItems, validarPaquete } from '../datos/esquema'
-import { armarPedido, copiar, limpiarRespuesta, partirTexto } from '../importar/claude'
+import { armarPedido, armarPedidoMapa, copiar, limpiarRespuesta, partirTexto } from '../importar/claude'
 import { ir } from '../rutas'
 
 /**
@@ -21,6 +21,10 @@ export function Mapa() {
   const items = useItems(curso?.id)
   const [abierto, setAbierto] = useState<string | null>(null)
   const [pidiendo, setPidiendo] = useState<{ fuente: Fuente; indice: number } | null>(null)
+  // Se guarda el id, no el apunte: el panel lo va guardando a medida que
+  // trabaja, y con una copia vieja la segunda parte no vería a la primera.
+  const [armandoId, setArmandoId] = useState<string | null>(null)
+  const armando = fuentes.find((f) => f.id === armandoId) ?? null
 
   // Las palabras del vocabulario se cuentan aparte: no son preguntas del tema,
   // son el paso previo a poder leerlo.
@@ -46,6 +50,7 @@ export function Mapa() {
     await db.fuentes.put({
       ...fuente,
       secciones,
+      temasDeClaude: false,
       hasta: secciones.length - 1,
       avance: 0,
       terminada: false,
@@ -121,7 +126,20 @@ export function Mapa() {
                 {secciones.filter((s) => s.cubierta).length} con la pasada hecha ·{' '}
                 {Math.round(fuente.texto.length / 1000)} mil caracteres
               </p>
+              {!fuente.temasDeClaude && (
+                <p className="apunte">
+                  Estos temas los cortó la app buscando títulos en el archivo: reconoce el formato,
+                  no entiende de qué trata. Claude puede leerlo y partirlo de verdad.
+                </p>
+              )}
               <div className="botonera" style={{ marginBottom: '0.5rem' }}>
+                <button
+                  type="button"
+                  className={`boton boton-chico${fuente.temasDeClaude ? '' : ' boton-guia'}`}
+                  onClick={() => setArmandoId(fuente.id)}
+                >
+                  {fuente.temasDeClaude ? 'Rehacer los temas con Claude' : 'Que Claude arme los temas'}
+                </button>
                 <button type="button" className="boton boton-chico" onClick={() => rehacerTemas(fuente)}>
                   Rehacer los temas
                 </button>
@@ -187,6 +205,10 @@ export function Mapa() {
             </section>
           )
         })
+      )}
+
+      {armando && (
+        <ArmarMapa fuente={armando} nombreCurso={curso.nombre} onCerrar={() => setArmandoId(null)} />
       )}
 
       {pidiendo && (
@@ -305,6 +327,141 @@ function PedirPreguntas({
       </label>
       <button type="button" className="boton boton-chico" disabled={!pegado.trim()} onClick={guardar}>
         Guardar las preguntas de este tema
+      </button>
+    </div>
+  )
+}
+
+/**
+ * Le pide a Claude que lea el apunte y diga en qué temas se parte.
+ *
+ * El corte del apunte manda sobre todo lo que viene después: el vocabulario y
+ * las preguntas se piden POR TEMA, así que un tema mal cortado arruina los dos
+ * aunque Claude los haga bien. La app sabe partirlo sola buscando títulos,
+ * pero eso es reconocer formato, no entender de qué trata el apunte.
+ */
+function ArmarMapa({
+  fuente,
+  nombreCurso,
+  onCerrar,
+}: {
+  fuente: Fuente
+  nombreCurso: string
+  onCerrar: () => void
+}) {
+  // Un apunte entero no cabe en un pedido: va por trozos grandes.
+  const trozos = useMemo(() => partirTexto(fuente.texto, 30000), [fuente.texto])
+  const [parte, setParte] = useState(0)
+  const [pegado, setPegado] = useState('')
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function traer() {
+    setError(null)
+    const limpio = limpiarRespuesta(pegado)
+    if (!limpio) { setError('Pega la respuesta de Claude.'); return }
+    let bruto: { temas?: unknown }
+    try {
+      bruto = JSON.parse(limpio)
+    } catch {
+      setError('Eso no es JSON válido. Copia el bloque de código completo.')
+      return
+    }
+    if (!Array.isArray(bruto.temas)) {
+      setError('La respuesta no trae una lista de "temas".')
+      return
+    }
+    const temas = (bruto.temas as { titulo?: unknown; empieza?: unknown }[])
+      .filter((t) => typeof t?.titulo === 'string' && typeof t?.empieza === 'string')
+      .map((t) => ({ titulo: String(t.titulo), empieza: String(t.empieza) }))
+    if (temas.length === 0) { setError('No vino ningún tema.'); return }
+
+    const traido = mapaDesdeClaude(fuente.texto, temas)
+    if (traido.secciones.length === 0) {
+      setError(
+        'No pude ubicar ninguno de esos temas en el texto. Pídele a Claude que copie las ' +
+        'primeras palabras de cada tema TAL CUAL están en el apunte.',
+      )
+      return
+    }
+
+    // Se acumulan: con un apunte largo esto se hace parte por parte, y la
+    // parte 3 no puede borrar los temas de la 1.
+    const previas = fuente.temasDeClaude ? fuente.secciones ?? [] : []
+    const secciones = fusionarSecciones(fuente.texto, previas, traido.secciones)
+    await db.fuentes.put({
+      ...fuente,
+      secciones,
+      temasDeClaude: true,
+      hasta: secciones.length - 1,
+      avance: 0,
+      terminada: secciones.every((x) => x.cubierta),
+    })
+    setPegado('')
+    const sumados = secciones.length - previas.length
+    setAviso(
+      (previas.length > 0
+        ? `${secciones.length} temas en total (${
+            sumados > 0 ? `${sumados} ${sumados === 1 ? 'nuevo' : 'nuevos'}` : 'sin temas nuevos'
+          }).`
+        : `${secciones.length} temas armados.`) +
+      (traido.perdidos.length > 0
+        ? ` No pude ubicar ${traido.perdidos.length}: ${traido.perdidos.join(', ')}.`
+        : ''),
+    )
+  }
+
+  return (
+    <div className="hoja hoja-aviso">
+      <div className="titulo-seccion">
+        <h3>Los temas de “{fuente.titulo}”</h3>
+        <button type="button" className="boton boton-chico" onClick={onCerrar}>Cerrar</button>
+      </div>
+
+      {aviso && <p className="verde">{aviso}</p>}
+      {error && <div className="aviso-error">{error}</div>}
+
+      <p className="apunte">
+        Copia el pedido, pégalo en Claude y trae su respuesta. Claude lee el apunte y decide dónde
+        empieza y termina cada tema, y les pone nombre. Los temas que tengas ahora se reemplazan
+        por los suyos.
+      </p>
+
+      {trozos.length > 1 && (
+        <label className="campo">
+          <span>El apunte es largo: va en {trozos.length} partes</span>
+          <select value={parte} onChange={(e) => setParte(Number(e.target.value))}>
+            {trozos.map((t, i) => <option key={i} value={i}>Parte {t.numero} de {t.total}</option>)}
+          </select>
+          <span className="apunte">
+            Hazlas en orden: los temas se van sumando, no se reemplazan.
+          </span>
+        </label>
+      )}
+
+      <div className="botonera">
+        <button
+          type="button"
+          className="boton boton-chico boton-guia"
+          onClick={async () => {
+            const listo = await copiar(armarPedidoMapa({
+              curso: nombreCurso,
+              titulo: fuente.titulo,
+              trozo: trozos[parte] ?? { numero: 1, total: 1, texto: fuente.texto },
+            }))
+            setAviso(listo ? 'Pedido copiado. Pégalo en Claude.' : 'No se pudo copiar solo.')
+          }}
+        >
+          Copiar el pedido
+        </button>
+      </div>
+
+      <label className="campo" style={{ marginTop: '0.7rem' }}>
+        <span>Pega acá la respuesta</span>
+        <textarea rows={4} value={pegado} onChange={(e) => setPegado(e.target.value)} />
+      </label>
+      <button type="button" className="boton boton-chico" disabled={!pegado.trim()} onClick={traer}>
+        Armar los temas
       </button>
     </div>
   )

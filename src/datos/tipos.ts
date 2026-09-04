@@ -265,6 +265,12 @@ export interface Fuente {
   /** El mapa del apunte. */
   secciones: SeccionApunte[]
   /**
+   * true cuando los temas los armó Claude leyendo el apunte, en vez de la app
+   * reconociendo títulos. Importa decirlo: el corte manda sobre el vocabulario
+   * y las preguntas de cada tema.
+   */
+  temasDeClaude?: boolean
+  /**
    * Hasta qué sección llegó la materia del curso. Lo que viene después existe
    * en el archivo pero todavía no es tuyo: no entra a las sesiones.
    */
