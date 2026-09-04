@@ -178,3 +178,32 @@ export async function reiniciarProgreso(cursoId: string): Promise<void> {
     await db.revisiones.where('cursoId').equals(cursoId).delete()
   })
 }
+
+/**
+ * Marcar una pregunta como mala, en el momento en que se ve que lo es.
+ *
+ * Es la única verificación que sirve de verdad: la que hace el que estudia
+ * cuando tiene la respuesta delante y le suena mal. Queda apartada de las
+ * sesiones para no seguir estudiando algo equivocado, y aparece en "Para
+ * revisar" para corregirla o borrarla con calma.
+ */
+export async function marcarMala(itemId: string, motivo: string): Promise<void> {
+  const item = await db.items.get(itemId)
+  if (!item) return
+  const previos = item.revisar ?? []
+  await db.items.put({
+    ...item,
+    revisar: previos.includes(motivo) ? previos : [...previos, motivo],
+    suspendido: true,
+    actualizadoEn: Date.now(),
+  })
+}
+
+/** Devuelve al estudio una pregunta apartada, ya corregida o dada por buena. */
+export async function devolverAlEstudio(itemId: string): Promise<void> {
+  const item = await db.items.get(itemId)
+  if (!item) return
+  const { revisar, ...limpio } = item
+  void revisar
+  await db.items.put({ ...limpio, suspendido: false, actualizadoEn: Date.now() })
+}
