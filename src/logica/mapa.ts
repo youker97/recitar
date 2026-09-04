@@ -7,6 +7,7 @@
 // jerarquía y se elige el nivel que parte el apunte en pedazos con sentido.
 
 import type { SeccionApunte } from '../datos/tipos'
+import { normalizar } from './comparar'
 
 /** Piso absoluto: más corto que esto no es un tema. */
 const LARGO_MINIMO = 250
@@ -335,9 +336,12 @@ export function fusionarSecciones(
   const juntas: SeccionApunte[] = []
   for (const s of todas) {
     const ultima = juntas[juntas.length - 1]
-    // Dos cortes casi en el mismo punto son el mismo tema visto dos veces: se
-    // queda el más nuevo, que es el que acaba de traer Claude.
-    if (ultima && Math.abs(s.inicio - ultima.inicio) < 200) {
+    // El mismo tema traído dos veces: mismo nombre, o el corte prácticamente
+    // en el mismo punto. Se queda el más nuevo, que es el que acaba de llegar.
+    // El margen es chico a propósito: con 200 se tragaba temas vecinos de un
+    // apunte apretado.
+    const mismoNombre = ultima && normalizar(ultima.titulo) === normalizar(s.titulo)
+    if (ultima && (mismoNombre || Math.abs(s.inicio - ultima.inicio) < 40)) {
       juntas[juntas.length - 1] = { ...s, cubierta: ultima.cubierta || s.cubierta }
       continue
     }
