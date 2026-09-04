@@ -47,7 +47,7 @@ export function Ajustes() {
           </a>
           <a className="accion" href="#/revisar">
             <strong>Para revisar</strong>
-            <span>Lo que Claude trajo y no está en tu apunte. Míralo antes de estudiarlo.</span>
+            <span>Las preguntas que apartaste por malas, para corregirlas o borrarlas.</span>
           </a>
           <a className="accion" href="#/errores">
             <strong>Registro de errores</strong>

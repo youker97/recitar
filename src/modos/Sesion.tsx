@@ -3,7 +3,7 @@ import type { Item } from '../datos/tipos'
 import { db, nuevoId } from '../datos/db'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useAjustes, useCursoActivo, useFuentes } from '../datos/hooks'
-import { arrastrarPadre, cargarDatos, registrarRespuesta } from '../datos/repos'
+import { arrastrarPadre, cargarDatos, marcarMala, registrarRespuesta } from '../datos/repos'
 import { armarCola } from '../logica/cola'
 import { calcularAlcance, filtrarPorAlcance } from '../logica/alcance'
 import { hijosDe } from '../logica/cadena'
@@ -68,6 +68,7 @@ export function Sesion() {
   const [aviso, setAviso] = useState<string | null>(null)
   const [enCadena, setEnCadena] = useState(false)
   const [restanFuera, setRestanFuera] = useState(0)
+  const [reclamando, setReclamando] = useState(false)
 
   const pendientes = useRef<Item[]>([])
   const cadena = useRef<Cadena | null>(null)
@@ -109,6 +110,7 @@ export function Sesion() {
   }, [datos, arrancada])
 
   function avanzar() {
+    setReclamando(false)
     const siguiente = pendientes.current.shift() ?? null
     const dentroDeCadena = cadena.current != null
     setActual(siguiente)
@@ -335,6 +337,49 @@ export function Sesion() {
       {aviso && <div className="hoja hoja-aviso">{aviso}</div>}
       {cuerpo}
       <hr className="filete" />
+
+      {/* La verificación que sirve de verdad: la que haces cuando tienes la
+          respuesta delante y te suena mal. Un toque y queda apartada. */}
+      {reclamando ? (
+        <div className="hoja">
+          <strong>¿Qué tiene de malo?</strong>
+          <p className="apunte" style={{ margin: '0.3rem 0 0.6rem' }}>
+            Se aparta de las sesiones y queda en “Para revisar”, con lo que digas.
+          </p>
+          <div className="botonera-columna">
+            {[
+              'La respuesta está equivocada.',
+              'No es lo que dice el apunte.',
+              'La pregunta está mal planteada o no se entiende.',
+              'Está repetida.',
+            ].map((motivo) => (
+              <button
+                key={motivo}
+                type="button"
+                className="boton boton-chico"
+                onClick={async () => {
+                  await marcarMala(actual.id, motivo)
+                  setReclamando(false)
+                  setAviso('Apartada. Queda en “Para revisar”.')
+                  avanzar()
+                }}
+              >
+                {motivo}
+              </button>
+            ))}
+            <button type="button" className="boton boton-chico boton-plano" onClick={() => setReclamando(false)}>
+              Mejor no
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p>
+          <button type="button" className="boton boton-chico boton-plano" onClick={() => setReclamando(true)}>
+            Esta pregunta está mala
+          </button>
+        </p>
+      )}
+
       <p className="apunte numeral">
         {resumen.vistos} respondidos · {formatearDuracion(Date.now() - resumen.desde)}
       </p>

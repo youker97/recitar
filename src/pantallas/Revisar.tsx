@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { db } from '../datos/db'
-import { borrarItem } from '../datos/repos'
+import { borrarItem, devolverAlEstudio } from '../datos/repos'
 import { useCursoActivo, useFuentes, useItems } from '../datos/hooks'
 import type { Item } from '../datos/tipos'
 import { NOMBRE_TIPO } from '../datos/tipos'
@@ -36,9 +36,7 @@ export function Revisar() {
   }
 
   async function darPorBueno(item: Item) {
-    const { revisar, ...limpio } = item
-    void revisar
-    await db.items.put({ ...limpio, actualizadoEn: Date.now() })
+    await devolverAlEstudio(item.id)
   }
 
   async function darTodoPorBueno() {
@@ -46,7 +44,7 @@ export function Revisar() {
     const ahora = Date.now()
     await db.items.bulkPut(pendientes.map(({ revisar, ...i }) => {
       void revisar
-      return { ...i, actualizadoEn: ahora }
+      return { ...i, suspendido: false, actualizadoEn: ahora }
     }))
   }
 
@@ -61,10 +59,9 @@ export function Revisar() {
         <div className="vacio">
           <p>Nada marcado.</p>
           <p className="apunte">
-            Cuando traigas material de Claude, la app lo compara con tu apunte y deja acá lo que no
-            encontró en el texto: definiciones que no salieron de ahí, artículos que tu apunte no
-            nombra, frases citadas que no están. No quiere decir que estén mal; quiere decir que tu
-            profesor no las dijo.
+            Acá llega lo que apartes mientras estudias —el botón “Esta pregunta está mala”, cuando
+            tengas la respuesta delante y te suene mal— y lo que la app no encuentre en tu apunte
+            al descargar una entrega.
           </p>
           <a className="boton" href="#/mapa">Ir a mis apuntes</a>
         </div>
@@ -79,8 +76,8 @@ export function Revisar() {
         <span className="lado numeral">{pendientes.length}</span>
       </div>
       <p className="apunte">
-        Esto no salió de tu apunte. Puede ser correcto igual —Claude sabe Derecho— pero tu profesor
-        evalúa de su texto. Mira cada uno y decide: si sirve, lo dejas; si no, lo borras.
+        Acá llega lo que apartaste mientras estudiabas y lo que la app no encontró en tu apunte.
+        Mira cada uno y decide: si sirve, vuelve al estudio; si no, lo borras.
       </p>
 
       <ul className="lista-limpia">
@@ -110,7 +107,7 @@ export function Revisar() {
 
               <div className="botonera">
                 <button type="button" className="boton boton-chico boton-guia" onClick={() => darPorBueno(item)}>
-                  Está bien, dejarlo
+                  {item.suspendido ? 'Está bien, devolverla' : 'Está bien, dejarlo'}
                 </button>
                 <button type="button" className="boton boton-chico" onClick={() => ir(`/editor?id=${item.id}`)}>
                   Corregirlo
@@ -135,7 +132,7 @@ export function Revisar() {
 
       <div className="botonera seccion">
         <button type="button" className="boton boton-chico" onClick={darTodoPorBueno}>
-          Dar por buenos los {pendientes.length}
+          Devolver los {pendientes.length} al estudio
         </button>
       </div>
     </div>

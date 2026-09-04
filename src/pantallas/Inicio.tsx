@@ -117,11 +117,11 @@ export function Inicio() {
       {porRevisar > 0 && (
         <div className="hoja hoja-aviso">
           <strong>
-            {porRevisar} {porRevisar === 1 ? 'ítem' : 'ítems'} para revisar antes de estudiarlos
+            {porRevisar} {porRevisar === 1 ? 'pregunta apartada' : 'preguntas apartadas'}
           </strong>
           <p style={{ margin: '0.3rem 0 0.6rem' }} className="apunte">
-            Claude los trajo, pero no están en tu apunte. Pueden ser correctos igual; tu profesor
-            evalúa del suyo.
+            Las que marcaste como malas mientras estudiabas —esas quedan fuera de las sesiones
+            hasta que las mires— más lo que la app no encontró en tu apunte.
           </p>
           <a className="boton boton-chico boton-guia" href="#/revisar">Revisarlos</a>
         </div>
